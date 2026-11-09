@@ -1,0 +1,4454 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPERAÇÃO AGV — Sinal Sob Controle</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --primary: #1f4e79;
+        --primary-d: #163a5a;
+        --accent: #ed7d31;
+        --accent-d: #c96620;
+        --bg: #fff;
+        --bg-alt: #f5f5f5;
+        --success: #70ad47;
+        --alert: #c00000;
+        --text: #263238;
+        --muted: #607d8b;
+        --border: #e0e0e0;
+        --radius: 10px;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      @keyframes pop {
+        from {
+          transform: translateX(-50%) translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(-50%) translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+      }
+      @keyframes xpPop {
+        from {
+          transform: scale(0);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes agvMove {
+        0%,
+        100% {
+          transform: translateX(30px);
+        }
+        50% {
+          transform: translateX(510px);
+        }
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      body {
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg-alt);
+        color: var(--text);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-size: inherit;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        line-height: 1.25;
+        color: var(--primary-d);
+      }
+      h2 {
+        font-size: 1.4rem;
+        margin-bottom: 0.75rem;
+      }
+      h3 {
+        font-size: 1.15rem;
+        margin: 1rem 0 0.5rem;
+      }
+      p {
+        margin-bottom: 0.7rem;
+      }
+      ul,
+      ol {
+        margin: 0.4rem 0 0.8rem 1.4rem;
+      }
+      li {
+        margin-bottom: 0.3rem;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .fb[hidden] {
+        display: none !important;
+      }
+
+      .topbar {
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.7rem 1.2rem;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+      }
+      .brand .logo {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: var(--accent);
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+      }
+      .brand small {
+        display: block;
+        font-weight: 400;
+        font-size: 0.72rem;
+        opacity: 0.8;
+        letter-spacing: 0;
+      }
+      .nav {
+        display: flex;
+        gap: 0.2rem;
+        margin-left: auto;
+        flex-wrap: wrap;
+      }
+      .nav button {
+        color: #dce6f0;
+        padding: 0.5rem 0.85rem;
+        border-radius: 6px;
+        font-size: 0.88rem;
+      }
+      .nav button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .nav button.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 1.4rem 1rem 3rem;
+      }
+      .card {
+        background: var(--bg);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.3rem 1.4rem;
+        margin-bottom: 1.1rem;
+        border: 1px solid var(--border);
+      }
+      .card-hd {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.6rem;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .pill {
+        display: inline-block;
+        padding: 0.18rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        background: #e8eff7;
+        color: var(--primary);
+      }
+      .pill.warn {
+        background: #fdecea;
+        color: var(--alert);
+      }
+      .pill.ok {
+        background: #e8f3e0;
+        color: #4a7a2a;
+      }
+      .pill.acc {
+        background: #fdeadd;
+        color: var(--accent-d);
+      }
+
+      .img-frame {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.9rem;
+        margin: 0.9rem 0;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      }
+      .img-frame svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+      }
+      .img-caption {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 0.5rem;
+        font-style: italic;
+      }
+      .img-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.9rem;
+        margin: 0.9rem 0;
+      }
+      .img-grid .img-frame {
+        margin: 0;
+      }
+      @media (max-width: 640px) {
+        .img-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.55rem 1.05rem;
+        border-radius: 8px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: 0.15s;
+        box-shadow: var(--shadow);
+      }
+      .btn:hover {
+        background: var(--primary-d);
+        transform: translateY(-1px);
+      }
+      .btn.acc {
+        background: var(--accent);
+      }
+      .btn.acc:hover {
+        background: var(--accent-d);
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--primary);
+        border: 1.5px solid var(--primary);
+      }
+      .btn.ghost:hover {
+        background: #eef4fa;
+      }
+      .btn.sm {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+      }
+      .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, var(--primary), #2a6398);
+        color: #fff;
+        border-radius: var(--radius);
+        padding: 1.5rem 1.6rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1.1rem;
+      }
+      .hero h2 {
+        color: #fff;
+        font-size: 1.5rem;
+        margin-bottom: 0.2rem;
+      }
+      .hero .avatar-big {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        display: grid;
+        place-items: center;
+        font-size: 2.6rem;
+        border: 3px solid rgba(255, 255, 255, 0.4);
+      }
+      .name-input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1.5px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 0.4rem 0.7rem;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 1.1rem;
+        font-weight: 700;
+        width: 100%;
+        max-width: 340px;
+        margin-top: 0.3rem;
+      }
+      .name-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .name-input::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .xpbar {
+        height: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.7rem;
+        max-width: 420px;
+      }
+      .xpbar > div {
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.5s;
+      }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.8rem;
+        margin-bottom: 1.1rem;
+      }
+      .stat {
+        background: #fff;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1rem;
+        border-top: 3px solid var(--accent);
+      }
+      .stat .num {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .stat .lbl {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .badge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.7rem;
+      }
+      .badge {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.8rem 0.6rem;
+        text-align: center;
+        font-size: 0.78rem;
+        transition: 0.2s;
+        cursor: help;
+      }
+      .badge.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+      }
+      .badge .ic {
+        font-size: 1.6rem;
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      .badge .nm {
+        font-weight: 600;
+        font-size: 0.78rem;
+      }
+      .badge .hw {
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-top: 0.25rem;
+        font-style: italic;
+      }
+
+      .map-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+      }
+      .mod-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.1rem;
+        box-shadow: var(--shadow);
+        position: relative;
+        border-left: 5px solid var(--border);
+        transition: 0.18s;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+      }
+      .mod-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      }
+      .mod-card.done {
+        border-left-color: var(--success);
+      }
+      .mod-card.available {
+        border-left-color: var(--accent);
+      }
+      .mod-card.locked {
+        opacity: 0.6;
+        border-left-color: var(--muted);
+      }
+      .mod-card .num {
+        position: absolute;
+        top: 0.7rem;
+        right: 0.8rem;
+        font-size: 0.7rem;
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .mod-card .icon {
+        font-size: 1.9rem;
+      }
+      .mod-card h4 {
+        font-size: 1.02rem;
+        color: var(--primary-d);
+      }
+      .mod-card p {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin: 0;
+      }
+      .mod-card .msep {
+        font-size: 0.7rem;
+        color: var(--accent-d);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .lesson {
+        background: #fff;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem 1.6rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+      }
+      .lesson .module-tag {
+        display: inline-block;
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.72rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+      }
+      .lesson .msep-tag {
+        display: inline-block;
+        background: #fdeadd;
+        color: var(--accent-d);
+        font-size: 0.72rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        margin-left: 0.4rem;
+        margin-bottom: 0.5rem;
+      }
+      .callout {
+        border-left: 4px solid var(--accent);
+        background: #fff8f2;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin: 0.8rem 0;
+        font-size: 0.9rem;
+      }
+      .callout.warn {
+        border-color: var(--alert);
+        background: #fdecea;
+      }
+      .callout.ok {
+        border-color: var(--success);
+        background: #f1f8ec;
+      }
+      .callout.info {
+        border-color: var(--primary);
+        background: #eef4fa;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.6rem 0;
+        font-size: 0.88rem;
+      }
+      .table th,
+      .table td {
+        border: 1px solid var(--border);
+        padding: 0.5rem 0.7rem;
+        text-align: left;
+      }
+      .table th {
+        background: #f1f4f7;
+        font-weight: 600;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--primary-d);
+      }
+      .table tr:nth-child(even) td {
+        background: #fafbfc;
+      }
+      .kbd {
+        font-family: ui-monospace, Consolas, monospace;
+        background: #f1f4f7;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: var(--primary-d);
+      }
+      .formula {
+        background: #f1f4f7;
+        border-radius: 8px;
+        padding: 0.65rem 0.9rem;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.95rem;
+        margin: 0.5rem 0;
+        border-left: 3px solid var(--primary);
+      }
+
+      .ia {
+        background: #fafbfc;
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 0.9rem 0;
+      }
+      .ia .ia-title {
+        font-weight: 700;
+        color: var(--primary-d);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .ia label {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin: 0.4rem 0 0.15rem;
+      }
+      .ia input[type="range"] {
+        width: 100%;
+      }
+      .ia .val {
+        font-family: ui-monospace, Consolas, monospace;
+        color: var(--accent-d);
+        font-weight: 700;
+      }
+      .row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .row > * {
+        flex: 1;
+        min-width: 180px;
+      }
+      canvas {
+        max-width: 100%;
+        display: block;
+        border-radius: 8px;
+        background: #0d1b2a;
+        border: 1px solid #1a2c42;
+      }
+
+      .quiz-q {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.1rem 1.2rem;
+        margin-bottom: 0.9rem;
+        border: 1px solid var(--border);
+      }
+      .quiz-q .qtext {
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+      }
+      .quiz-opt {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.6rem 0.8rem;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 0.4rem;
+        background: #fff;
+        transition: 0.15s;
+      }
+      .quiz-opt:hover:not([disabled]) {
+        border-color: var(--primary);
+        background: #f7fafd;
+      }
+      .quiz-opt.correct {
+        border-color: var(--success);
+        background: #f1f8ec;
+      }
+      .quiz-opt.wrong {
+        border-color: var(--alert);
+        background: #fdecea;
+      }
+      .quiz-opt[disabled] {
+        cursor: default;
+        opacity: 0.7;
+      }
+      .fb {
+        margin-top: 0.5rem;
+        padding: 0.6rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.88rem;
+      }
+      .fb.ok {
+        background: #f1f8ec;
+        color: #3c6b1f;
+        border-left: 3px solid var(--success);
+      }
+      .fb.no {
+        background: #fdecea;
+        color: #8a1a1a;
+        border-left: 3px solid var(--alert);
+      }
+      .xp-gain {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-left: 0.4rem;
+        animation: xpPop 0.4s ease-out;
+      }
+
+      .req-list {
+        background: #fafbfc;
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        padding: 0.7rem 1rem;
+        margin: 0.8rem 0;
+      }
+      .req-list .req-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.3rem 0;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .req-list .req-item.ok {
+        color: #4a7a2a;
+      }
+      .req-list .req-ic {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        background: #e0e0e0;
+        color: #fff;
+        font-size: 0.75rem;
+      }
+      .req-list .req-item.ok .req-ic {
+        background: var(--success);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.8rem;
+      }
+      .form-grid .full {
+        grid-column: 1/-1;
+      }
+      .field label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--primary-d);
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: #fff;
+      }
+      .field input:focus,
+      .field select:focus,
+      .field textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .field textarea {
+        resize: vertical;
+        min-height: 70px;
+      }
+
+      .tp-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 1.2rem;
+        flex-wrap: wrap;
+      }
+      .hint-box {
+        background: #fff8e1;
+        border-left: 3px solid #f0ad4e;
+        padding: 0.6rem 0.8rem;
+        border-radius: 6px;
+        margin: 0.5rem 0;
+        font-size: 0.88rem;
+      }
+      .empty {
+        text-align: center;
+        color: var(--muted);
+        padding: 2rem 1rem;
+        font-style: italic;
+      }
+      .tag-row {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin: 0.4rem 0;
+      }
+      .done-chk {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        padding: 0.4rem 0;
+        cursor: pointer;
+      }
+      .done-chk input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success);
+      }
+
+      .ds-viewer {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 1rem 0;
+        overflow: hidden;
+      }
+      .ds-tabs {
+        display: flex;
+        background: #f1f4f7;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .ds-tabs button {
+        flex: 1;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--primary);
+        border-bottom: 3px solid transparent;
+        min-width: 120px;
+      }
+      .ds-tabs button.active {
+        border-bottom-color: var(--accent);
+        background: #fff;
+        color: var(--accent-d);
+      }
+      .ds-body {
+        padding: 1rem;
+        background: #fff;
+        font-size: 0.9rem;
+      }
+
+      .agv-anim {
+        animation: agvMove 4s ease-in-out infinite;
+      }
+
+      .cert-toolbar {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .cert-toolbar .name-set {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .cert-toolbar input {
+        padding: 0.5rem 0.7rem;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        min-width: 220px;
+      }
+      .print-warning {
+        background: #fff8e1;
+        color: #8a5a00;
+        padding: 0.5rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        border-left: 3px solid #f0ad4e;
+      }
+      .cert-wrap {
+        background: #f5f5f5;
+        padding: 1.2rem;
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+      .cert {
+        container-type: inline-size;
+        position: relative;
+        width: 100%;
+        max-width: 1060px;
+        min-width: 640px;
+        aspect-ratio: 297/210;
+        margin: 0 auto;
+        background: #fff;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        color: #263238;
+        overflow: hidden;
+      }
+      .cert-frame {
+        position: absolute;
+        inset: 2.2cqw;
+        border: 0.25cqw solid #1f4e79;
+        padding: 2.2cqw 5cqw;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-align: center;
+      }
+      .cert-corner {
+        position: absolute;
+        width: 5cqw;
+        height: 5cqw;
+        border: 0.35cqw solid #ed7d31;
+      }
+      .cert-corner.tl {
+        top: -0.7cqw;
+        left: -0.7cqw;
+        border-right: 0;
+        border-bottom: 0;
+      }
+      .cert-corner.tr {
+        top: -0.7cqw;
+        right: -0.7cqw;
+        border-left: 0;
+        border-bottom: 0;
+      }
+      .cert-corner.bl {
+        bottom: -0.7cqw;
+        left: -0.7cqw;
+        border-right: 0;
+        border-top: 0;
+      }
+      .cert-corner.br {
+        bottom: -0.7cqw;
+        right: -0.7cqw;
+        border-left: 0;
+        border-top: 0;
+      }
+      .cert-logo {
+        display: inline-block;
+        font-size: 2cqw;
+        font-weight: 800;
+        letter-spacing: 0.35cqw;
+        background: #1f4e79;
+        color: #fff;
+        padding: 0.45cqw 2.4cqw;
+        border-radius: 0.6cqw;
+      }
+      .cert-title {
+        font-size: 4.2cqw;
+        font-weight: 700;
+        color: #1f4e79;
+        letter-spacing: 0.6cqw;
+        line-height: 1.1;
+        margin-top: 1cqw;
+      }
+      .cert-subtitle {
+        color: #c00000;
+        font-weight: 600;
+        letter-spacing: 0.25cqw;
+        font-size: 1.2cqw;
+        margin-top: 0.3cqw;
+      }
+      .cert-body {
+        line-height: 1.5;
+        font-size: 1.4cqw;
+      }
+      .cert-body .lbl {
+        color: #607d8b;
+        font-size: 1.35cqw;
+      }
+      .cert-name {
+        display: inline-block;
+        max-width: 84cqw;
+        min-width: 30cqw;
+        font-size: 3.3cqw;
+        font-weight: 700;
+        color: #1f4e79;
+        border-bottom: 0.2cqw solid #ed7d31;
+        padding: 0 3cqw 0.3cqw;
+        margin: 0.5cqw 0 0.9cqw;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+      }
+      .cert-name.md {
+        font-size: 2.5cqw;
+      }
+      .cert-name.sm {
+        font-size: 1.9cqw;
+      }
+      .cert-course {
+        font-size: 2.1cqw;
+        font-weight: 700;
+        color: #1f4e79;
+        margin: 0.9cqw 0 0.2cqw;
+      }
+      .cert-detail {
+        font-size: 1.35cqw;
+        color: #455a64;
+        line-height: 1.55;
+      }
+      .cert-caps {
+        font-size: 1.15cqw;
+        color: #455a64;
+        margin-top: 0.6cqw;
+        font-style: italic;
+      }
+      .cert-sig-row {
+        display: flex;
+        justify-content: center;
+        gap: 12cqw;
+      }
+      .cert-sig {
+        width: 30cqw;
+      }
+      .cert-sig .line {
+        border-top: 0.12cqw solid #263238;
+        margin-bottom: 0.5cqw;
+      }
+      .cert-sig .name {
+        font-weight: 700;
+        color: #1f4e79;
+        font-size: 1.5cqw;
+      }
+      .cert-sig .role {
+        font-size: 1cqw;
+        color: #607d8b;
+        text-transform: uppercase;
+        letter-spacing: 0.12cqw;
+      }
+      .cert-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      .cert-seal {
+        border: 0.2cqw solid #ed7d31;
+        background: #fff8e1;
+        border-radius: 5cqw;
+        padding: 0.5cqw 1.6cqw;
+        font-size: 1.1cqw;
+        color: #c96620;
+        font-weight: 700;
+      }
+      .cert-meta {
+        font-size: 1.1cqw;
+        color: #607d8b;
+        text-align: right;
+        line-height: 1.5;
+      }
+      .cert-id {
+        font-family: ui-monospace, Consolas, monospace;
+        font-weight: 600;
+      }
+
+      .save-indicator {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        background: #70ad47;
+        color: #fff;
+        padding: 0.4rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 999;
+        pointer-events: none;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .topbar,
+        .no-print,
+        .tp-nav,
+        .save-indicator {
+          display: none !important;
+        }
+        .main {
+          padding: 0;
+          max-width: none;
+          margin: 0;
+        }
+        .card,
+        .lesson {
+          box-shadow: none;
+          border: 1px solid #ccc;
+          page-break-inside: avoid;
+        }
+        .cert-wrap {
+          padding: 0;
+          margin: 0;
+          background: #fff;
+          border-radius: 0;
+          overflow: hidden;
+          width: 297mm;
+          height: 209mm;
+        }
+        .cert {
+          width: 297mm;
+          max-width: none;
+          min-width: 0;
+          height: 209mm;
+          aspect-ratio: auto;
+          margin: 0;
+          box-shadow: none;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        @page {
+          size: A4 landscape;
+          margin: 0;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          padding: 0.6rem 0.8rem;
+        }
+        .nav {
+          width: 100%;
+          order: 3;
+          margin-left: 0;
+        }
+        .nav button {
+          flex: 1;
+          text-align: center;
+          font-size: 0.8rem;
+          padding: 0.4rem 0.4rem;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          text-align: left;
+        }
+        .hero .avatar-big {
+          width: 64px;
+          height: 64px;
+          font-size: 1.8rem;
+        }
+        .main {
+          padding: 0.9rem 0.6rem 2rem;
+        }
+        .lesson,
+        .card {
+          padding: 1rem;
+        }
+        .cert {
+          min-width: 0;
+        }
+        .cert-inner {
+          padding: 24px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script>
+      "use strict";
+      /* =========================================================
+   OPERAÇÃO AGV — SINAL SOB CONTROLE
+   Refatoração didática completa (v6)
+   ========================================================= */
+
+      const STORAGE_KEY = "operacao_agv_v6";
+      const STORAGE_VERSION = 6;
+      const XP_PER_CORRECT = 10;
+
+      /* ==================== CONSTANTES ==================== */
+      const LEVELS = [
+        { min: 0, name: "Aprendiz de Eletrônica" },
+        { min: 50, name: "Analista de Sinais" },
+        { min: 150, name: "Investigador Técnico" },
+        { min: 250, name: "Projetista de Condicionamento" },
+        { min: 350, name: "Técnico de Bancada" },
+        { min: 450, name: "Especialista em Diagnóstico" },
+        { min: 560, name: "Integrador de Sistemas" },
+      ];
+
+      const BADGES = {
+        primeira_missao: {
+          name: "Primeira Missão",
+          icon: "🎖️",
+          desc: "Concluiu o primeiro desafio.",
+          how: "Conclua o Módulo 0.",
+        },
+        mestre_terminais: {
+          name: "Mestre dos Terminais",
+          icon: "🔌",
+          desc: "Identificou os terminais do AmpOp.",
+          how: "Acerte todas as questões do Módulo 1.",
+        },
+        leitor_datasheets: {
+          name: "Leitor de Datasheets",
+          icon: "📄",
+          desc: "Interpretou parâmetros do LM358.",
+          how: "Acerte todas as questões do Módulo 2.",
+        },
+        cacador_ruidos: {
+          name: "Caçador de Ruídos",
+          icon: "📡",
+          desc: "Identificou a instabilidade.",
+          how: "Acerte todas as questões do Módulo 3.",
+        },
+        guardiao_seguranca: {
+          name: "Guardião da Segurança",
+          icon: "🛡️",
+          desc: "Concluiu inspeção.",
+          how: "Registre o checklist de segurança do Módulo 4.",
+        },
+        mestre_medicoes: {
+          name: "Mestre das Medições",
+          icon: "📏",
+          desc: "Registrou medições.",
+          how: "Adicione ao menos 1 medição no Módulo 7.",
+        },
+        detetive_falhas: {
+          name: "Detetive de Falhas",
+          icon: "🔍",
+          desc: "Encontrou a causa da falha.",
+          how: "Revele a análise do estudo de caso no Módulo 6.",
+        },
+        engenheiro_integrador: {
+          name: "Engenheiro Integrador",
+          icon: "⚙️",
+          desc: "Concluiu o dossiê.",
+          how: "Salve o mini-dossiê do Módulo 7.",
+        },
+        trabalho_equipe: {
+          name: "Trabalho em Equipe",
+          icon: "🤝",
+          desc: "Identificou a equipe.",
+          how: "Preencha equipe e integrantes no dossiê.",
+        },
+      };
+
+      const MSEP = {
+        contextualizacao: "Contextualização",
+        desafio: "Apresentação do Desafio",
+        organizacao: "Organização da Aprendizagem",
+        desenvolvimento: "Desenvolvimento de Capacidades",
+        mediacao: "Mediação",
+        analise: "Análise e Avaliação",
+        sintese: "Síntese e Aplicação",
+      };
+
+      /* ==================== SVG LIBRARY ==================== */
+      const _C = {
+        o: "#ED7D31",
+        b: "#1F4E79",
+        t: "#263238",
+        m: "#607d8b",
+        g: "#70AD47",
+        r: "#C00000",
+      };
+      const _w = (a, b, c, d, k = _C.o) =>
+        `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${k}" stroke-width="2.5" stroke-linecap="round"/>`;
+      const _dot = (x, y, k = _C.o) =>
+        `<circle cx="${x}" cy="${y}" r="4" fill="${k}"/>`;
+      const _t = (x, y, s, z = 13, k = _C.t, a = "start", w = "bold") =>
+        `<text x="${x}" y="${y}" font-size="${z}" font-weight="${w}" fill="${k}" text-anchor="${a}">${s}</text>`;
+      const _res = (x, y, w, s, k = _C.b) =>
+        `<rect x="${x}" y="${y - 8}" width="${w}" height="16" fill="#fff" stroke="${k}" stroke-width="2"/>` +
+        _t(x + w / 2, y - 14, s, 12, k, "middle");
+      const _gnd = (x, y) =>
+        _w(x - 15, y, x + 15, y, _C.t) +
+        _w(x - 8, y + 7, x + 8, y + 7, _C.t) +
+        _t(x + 22, y + 10, "GND", 11, _C.m, "start", "normal");
+      const _amp = (top, bot) =>
+        `<polygon points="210,60 210,180 340,120" fill="#eef4fa" stroke="${_C.b}" stroke-width="2.5" stroke-linejoin="round"/>` +
+        _t(222, 96, top, 18, _C.b) +
+        _t(222, 160, bot, 18, _C.b) +
+        _w(340, 120, 420, 120) +
+        _t(424, 125, "Vout");
+      const _fig = (vb, body, cap) =>
+        `<div class="img-frame"><svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${cap.replace(/"/g, "&quot;")}">${body}</svg><div class="img-caption">${cap}</div></div>`;
+
+      const SVG = {
+        opAmp: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 300 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Símbolo esquemático do amplificador operacional">
+        <defs><linearGradient id="triGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#eef4fa"/><stop offset="1" stop-color="#d5e4f0"/>
+        </linearGradient></defs>
+        <polygon points="80,25 80,155 255,90" fill="url(#triGrad)" stroke="#1F4E79" stroke-width="3" stroke-linejoin="round"/>
+        <line x1="25" y1="60" x2="80" y2="60" stroke="#ED7D31" stroke-width="2.5"/>
+        <line x1="25" y1="120" x2="80" y2="120" stroke="#ED7D31" stroke-width="2.5"/>
+        <text x="10" y="55" font-size="14" font-weight="bold" fill="#263238">V+</text>
+        <text x="10" y="140" font-size="14" font-weight="bold" fill="#263238">V−</text>
+        <line x1="255" y1="90" x2="295" y2="90" stroke="#ED7D31" stroke-width="2.5"/>
+        <text x="258" y="82" font-size="14" font-weight="bold" fill="#263238">Vout</text>
+        <text x="95" y="66" font-size="22" font-weight="bold" fill="#1F4E79">+</text>
+        <text x="95" y="128" font-size="22" font-weight="bold" fill="#1F4E79">−</text>
+        <text x="165" y="98" font-size="14" font-weight="bold" fill="#1F4E79" text-anchor="middle">AmpOp</text>
+      </svg>
+      <div class="img-caption">Símbolo esquemático do amplificador operacional: entradas V+ (não inversora) e V− (inversora), saída Vout</div>
+    </div>`,
+        lm358: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LM358 em encapsulamento DIP-8 visto por cima">
+        <defs>
+          <linearGradient id="chipBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2a"/><stop offset="1" stop-color="#111"/></linearGradient>
+          <linearGradient id="pinMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0e0e0"/><stop offset=".5" stop-color="#a8a8a8"/><stop offset="1" stop-color="#808080"/></linearGradient>
+        </defs>
+        <ellipse cx="200" cy="235" rx="160" ry="8" fill="rgba(0,0,0,.12)"/>
+        <rect x="80" y="40" width="240" height="170" rx="12" fill="url(#chipBody)" stroke="#000" stroke-width="2"/>
+        <ellipse cx="200" cy="55" rx="16" ry="7" fill="#050505" stroke="#333"/>
+        <circle cx="102" cy="66" r="5" fill="#888"/>
+        <g fill="url(#pinMetal)" stroke="#555" stroke-width=".8">
+          <rect x="48" y="62" width="35" height="10" rx="1"/><rect x="48" y="97" width="35" height="10" rx="1"/>
+          <rect x="48" y="132" width="35" height="10" rx="1"/><rect x="48" y="167" width="35" height="10" rx="1"/>
+          <rect x="317" y="62" width="35" height="10" rx="1"/><rect x="317" y="97" width="35" height="10" rx="1"/>
+          <rect x="317" y="132" width="35" height="10" rx="1"/><rect x="317" y="167" width="35" height="10" rx="1"/>
+        </g>
+        <g font-size="14" font-weight="bold" fill="#fff">
+          <text x="38" y="72" text-anchor="end">1</text><text x="38" y="107" text-anchor="end">2</text>
+          <text x="38" y="142" text-anchor="end">3</text><text x="38" y="177" text-anchor="end">4</text>
+          <text x="362" y="72">8</text><text x="362" y="107">7</text><text x="362" y="142">6</text><text x="362" y="177">5</text>
+        </g>
+        <g font-size="11" fill="#d0d8e0">
+          <text x="130" y="72">Saída 1</text><text x="130" y="107">IN− 1</text><text x="130" y="142">IN+ 1</text><text x="130" y="177">GND</text>
+          <text x="270" y="72" text-anchor="end">Vcc+</text><text x="270" y="107" text-anchor="end">Saída 2</text>
+          <text x="270" y="142" text-anchor="end">IN− 2</text><text x="270" y="177" text-anchor="end">IN+ 2</text>
+        </g>
+        <text x="200" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#263238">LM358 · Encapsulamento DIP-8 · Vista superior</text>
+      </svg>
+      <div class="img-caption">LM358: amplificador operacional duplo em DIP-8. O chanfro semicircular no topo indica o lado do pino 1.</div>
+    </div>`,
+        lm741: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LM741 em encapsulamento DIP-8 visto por cima">
+        <defs>
+          <linearGradient id="chipBody7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2a"/><stop offset="1" stop-color="#111"/></linearGradient>
+          <linearGradient id="pinMetal7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0e0e0"/><stop offset=".5" stop-color="#a8a8a8"/><stop offset="1" stop-color="#808080"/></linearGradient>
+        </defs>
+        <ellipse cx="200" cy="235" rx="160" ry="8" fill="rgba(0,0,0,.12)"/>
+        <rect x="80" y="40" width="240" height="170" rx="12" fill="url(#chipBody7)" stroke="#000" stroke-width="2"/>
+        <ellipse cx="200" cy="55" rx="16" ry="7" fill="#050505" stroke="#333"/>
+        <circle cx="102" cy="66" r="5" fill="#888"/>
+        <g fill="url(#pinMetal7)" stroke="#555" stroke-width=".8">
+          <rect x="48" y="62" width="35" height="10" rx="1"/><rect x="48" y="97" width="35" height="10" rx="1"/>
+          <rect x="48" y="132" width="35" height="10" rx="1"/><rect x="48" y="167" width="35" height="10" rx="1"/>
+          <rect x="317" y="62" width="35" height="10" rx="1"/><rect x="317" y="97" width="35" height="10" rx="1"/>
+          <rect x="317" y="132" width="35" height="10" rx="1"/><rect x="317" y="167" width="35" height="10" rx="1"/>
+        </g>
+        <g font-size="14" font-weight="bold" fill="#fff">
+          <text x="38" y="72" text-anchor="end">1</text><text x="38" y="107" text-anchor="end">2</text>
+          <text x="38" y="142" text-anchor="end">3</text><text x="38" y="177" text-anchor="end">4</text>
+          <text x="362" y="72">8</text><text x="362" y="107">7</text><text x="362" y="142">6</text><text x="362" y="177">5</text>
+        </g>
+        <g font-size="11" fill="#d0d8e0">
+          <text x="130" y="72">Offset null</text><text x="130" y="107">IN−</text><text x="130" y="142">IN+</text><text x="130" y="177">V−</text>
+          <text x="270" y="72" text-anchor="end">NC</text><text x="270" y="107" text-anchor="end">V+</text>
+          <text x="270" y="142" text-anchor="end">Saída</text><text x="270" y="177" text-anchor="end">Offset null</text>
+        </g>
+        <text x="200" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#263238">LM741 · Encapsulamento DIP-8 · Vista superior</text>
+      </svg>
+      <div class="img-caption">LM741: amplificador operacional simples em DIP-8. Pino 7 (V+) e pino 4 (V−) alimentam o CI; o pino 6 é a saída.</div>
+    </div>`,
+        buffer: () =>
+          _fig(
+            "0 0 460 240",
+            _t(5, 95, "Vin") +
+              _w(45, 90, 210, 90) +
+              _amp("+", "−") +
+              _w(210, 150, 180, 150) +
+              _w(180, 150, 180, 200) +
+              _w(180, 200, 390, 200) +
+              _w(390, 200, 390, 120) +
+              _dot(390, 120) +
+              _t(
+                285,
+                190,
+                "realimentação: Vout ligado a V−",
+                11,
+                _C.m,
+                "middle",
+                "normal",
+              ) +
+              _t(275, 226, "Buffer · Vout = Vin", 13, _C.b, "middle"),
+            "Buffer (seguidor de tensão): ganho unitário, alta impedância de entrada e baixa de saída — isola o sensor",
+          ),
+        inverting: () =>
+          _fig(
+            "0 0 460 240",
+            _t(5, 95, "Vin") +
+              _w(45, 90, 80, 90) +
+              _res(80, 90, 55, "R1") +
+              _w(135, 90, 210, 90) +
+              _dot(180, 90) +
+              _amp("−", "+") +
+              _w(180, 90, 180, 40) +
+              _w(180, 40, 260, 40) +
+              _res(260, 40, 60, "R2") +
+              _w(320, 40, 390, 40) +
+              _w(390, 40, 390, 120) +
+              _dot(390, 120) +
+              _w(210, 150, 180, 150) +
+              _w(180, 150, 180, 205) +
+              _gnd(180, 205) +
+              _t(300, 200, "Inversor", 13, _C.b, "middle") +
+              _t(300, 218, "Vout = −(R2/R1)·Vin", 11, _C.m, "middle", "normal"),
+            "Amplificador inversor: a saída tem fase oposta à entrada. Ganho = −(R2/R1).",
+          ),
+        nonInverting: () =>
+          _fig(
+            "0 0 460 300",
+            _t(5, 95, "Vin") +
+              _w(45, 90, 210, 90) +
+              _amp("+", "−") +
+              _w(210, 150, 180, 150) +
+              _w(180, 150, 180, 210) +
+              _dot(180, 210) +
+              _w(180, 210, 260, 210) +
+              _res(260, 210, 60, "R2") +
+              _w(320, 210, 390, 210) +
+              _w(390, 210, 390, 120) +
+              _dot(390, 120) +
+              _w(180, 210, 180, 226) +
+              `<rect x="172" y="226" width="16" height="36" fill="#fff" stroke="${_C.b}" stroke-width="2"/>` +
+              _t(196, 249, "R1", 12, _C.b) +
+              _w(180, 262, 180, 274) +
+              _gnd(180, 274) +
+              _t(330, 262, "Não inversor", 13, _C.b, "middle") +
+              _t(
+                330,
+                280,
+                "Vout = (1 + R2/R1)·Vin",
+                11,
+                _C.m,
+                "middle",
+                "normal",
+              ),
+            "Amplificador não inversor: mesma fase da entrada. Ganho = 1 + R2/R1.",
+          ),
+        comparator: () =>
+          _fig(
+            "0 0 460 260",
+            _t(5, 95, "Vin") +
+              _w(45, 90, 210, 90) +
+              _t(5, 155, "Vref", 13, _C.r) +
+              _w(45, 150, 210, 150, _C.r) +
+              _amp("+", "−") +
+              _t(270, 215, "Comparador", 13, _C.b, "middle") +
+              _t(
+                270,
+                232,
+                "Vin > Vref → alto · Vin < Vref → baixo",
+                11,
+                _C.m,
+                "middle",
+                "normal",
+              ) +
+              _t(
+                270,
+                248,
+                "(malha aberta — sem realimentação)",
+                10,
+                _C.m,
+                "middle",
+                "normal",
+              ),
+            "Comparador: AmpOp em malha aberta. A saída satura em ALTO quando Vin > Vref e em BAIXO quando Vin < Vref.",
+          ),
+        hysteresis: () =>
+          _fig(
+            "0 0 460 270",
+            _t(5, 95, "Vin") +
+              _w(45, 90, 80, 90) +
+              _res(80, 90, 55, "R1") +
+              _w(135, 90, 210, 90) +
+              _dot(180, 90, _C.g) +
+              _w(180, 90, 180, 40, _C.g) +
+              _w(180, 40, 260, 40, _C.g) +
+              _res(260, 40, 60, "R2", _C.g) +
+              _w(320, 40, 390, 40, _C.g) +
+              _w(390, 40, 390, 120, _C.g) +
+              _dot(390, 120, _C.g) +
+              _t(5, 155, "Vref", 13, _C.r) +
+              _w(45, 150, 210, 150, _C.r) +
+              _amp("+", "−") +
+              _t(270, 205, "Schmitt Trigger", 13, "#4a7a2a", "middle") +
+              _t(
+                270,
+                222,
+                "realimentação POSITIVA (Vout → V+ via R2)",
+                11,
+                _C.m,
+                "middle",
+                "normal",
+              ) +
+              _t(
+                270,
+                238,
+                "cria dois limiares: superior (VTH) e inferior (VTL)",
+                10,
+                _C.m,
+                "middle",
+                "normal",
+              ),
+            "Comparador com histerese (Schmitt Trigger): R2 leva parte da saída de volta ao V+ e cria dois limiares, eliminando comutações espúrias por ruído.",
+          ),
+        hysteresisCurve: () =>
+          _fig(
+            "0 0 420 270",
+            _w(50, 220, 390, 220, _C.t) +
+              _w(50, 20, 50, 220, _C.t) +
+              `<line x1="220" y1="40" x2="220" y2="220" stroke="${_C.r}" stroke-dasharray="4,4" stroke-width="1.5"/><line x1="320" y1="40" x2="320" y2="220" stroke="${_C.g}" stroke-dasharray="4,4" stroke-width="1.5"/>` +
+              _w(70, 200, 320, 200, _C.r) +
+              _w(320, 200, 320, 40, _C.g) +
+              _w(220, 40, 380, 40, _C.g) +
+              _w(220, 40, 220, 200, _C.r) +
+              _dot(320, 200, _C.g) +
+              _dot(220, 40, _C.r) +
+              _t(220, 240, "VTL", 11, _C.r, "middle") +
+              _t(320, 240, "VTH", 11, _C.g, "middle") +
+              _t(380, 32, "Vout alto", 11, _C.g, "end") +
+              _t(70, 216, "Vout baixo", 11, _C.r) +
+              _t(270, 130, "banda de histerese", 10, _C.m, "middle", "normal") +
+              _t(220, 262, "Vin (V)", 12, _C.t, "middle") +
+              `<text x="20" y="130" font-size="12" font-weight="bold" text-anchor="middle" fill="${_C.t}" transform="rotate(-90 20 130)">Vout</text>`,
+            "Curva de transferência (não inversor): a saída sobe só ao passar de VTH e desce só ao cair abaixo de VTL; entre os dois, mantém o estado anterior.",
+          ),
+        rcFilter: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 460 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Circuito do filtro RC passa-baixa">
+        <text x="5" y="80" font-size="13" font-weight="bold" fill="#263238">Vin</text>
+        <line x1="45" y1="75" x2="100" y2="75" stroke="#ED7D31" stroke-width="2.5"/>
+        <rect x="100" y="67" width="70" height="16" fill="#fff" stroke="#1F4E79" stroke-width="2"/>
+        <text x="135" y="60" font-size="12" font-weight="bold" fill="#1F4E79" text-anchor="middle">R</text>
+        <line x1="170" y1="75" x2="290" y2="75" stroke="#ED7D31" stroke-width="2.5"/>
+        <text x="230" y="67" font-size="13" font-weight="bold" fill="#263238">Vout</text>
+        <circle cx="230" cy="75" r="4" fill="#ED7D31"/>
+        <line x1="230" y1="75" x2="230" y2="140" stroke="#ED7D31" stroke-width="2.5"/>
+        <line x1="220" y1="140" x2="240" y2="140" stroke="#1F4E79" stroke-width="3"/>
+        <line x1="220" y1="148" x2="240" y2="148" stroke="#1F4E79" stroke-width="3"/>
+        <text x="248" y="148" font-size="12" font-weight="bold" fill="#1F4E79">C</text>
+        <line x1="230" y1="148" x2="230" y2="195" stroke="#ED7D31" stroke-width="2.5"/>
+        <line x1="215" y1="195" x2="245" y2="195" stroke="#263238" stroke-width="3"/>
+        <line x1="222" y1="202" x2="238" y2="202" stroke="#263238" stroke-width="2"/>
+        <text x="250" y="200" font-size="11" fill="#607d8b">GND</text>
+        <text x="290" y="75" font-size="11" fill="#607d8b">→ para o comparador</text>
+        <text x="230" y="40" font-size="12" font-weight="bold" fill="#1F4E79" text-anchor="middle">fc = 1 / (2π · R · C)</text>
+      </svg>
+      <div class="img-caption">Filtro RC passa-baixa: atenua ruído de alta frequência antes do comparador</div>
+    </div>`,
+        architecture: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Arquitetura do condicionador de sinais do AGV">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#1F4E79"/></marker></defs>
+        <g font-size="11" font-weight="bold" text-anchor="middle">
+          <rect x="20" y="60" width="110" height="60" rx="8" fill="#fff8f2" stroke="#ED7D31" stroke-width="2"/>
+          <text x="75" y="85" fill="#c96620">Sensor</text>
+          <text x="75" y="102" font-size="9" fill="#607d8b" font-weight="400">0,8–3,2 V</text>
+          <circle cx="75" cy="130" r="4" fill="#ED7D31"/><text x="75" y="148" font-size="10" fill="#c96620">TP1</text>
+          <rect x="170" y="60" width="110" height="60" rx="8" fill="#eef4fa" stroke="#1F4E79" stroke-width="2"/>
+          <text x="225" y="85" fill="#1F4E79">Buffer</text>
+          <text x="225" y="102" font-size="9" fill="#607d8b" font-weight="400">isola sensor</text>
+          <circle cx="225" cy="130" r="4" fill="#1F4E79"/><text x="225" y="148" font-size="10" fill="#1F4E79">TP2</text>
+          <rect x="320" y="60" width="110" height="60" rx="8" fill="#eef4fa" stroke="#1F4E79" stroke-width="2"/>
+          <text x="375" y="85" fill="#1F4E79">Filtro RC</text>
+          <text x="375" y="102" font-size="9" fill="#607d8b" font-weight="400">reduz ruído</text>
+          <circle cx="375" cy="130" r="4" fill="#1F4E79"/><text x="375" y="148" font-size="10" fill="#1F4E79">TP3</text>
+          <rect x="470" y="60" width="150" height="60" rx="8" fill="#f1f8ec" stroke="#70AD47" stroke-width="2"/>
+          <text x="545" y="82" fill="#4a7a2a">Comparador</text>
+          <text x="545" y="98" font-size="9" fill="#607d8b" font-weight="400">+ histerese</text>
+          <circle cx="545" cy="130" r="4" fill="#70AD47"/><text x="545" y="148" font-size="10" fill="#4a7a2a">TP4</text>
+          <rect x="660" y="60" width="130" height="60" rx="8" fill="#fdecea" stroke="#C00000" stroke-width="2"/>
+          <text x="725" y="85" fill="#C00000">Controlador</text>
+          <text x="725" y="102" font-size="9" fill="#607d8b" font-weight="400">decide estado</text>
+          <rect x="830" y="60" width="60" height="60" rx="8" fill="#f1f4f7" stroke="#263238" stroke-width="2"/>
+          <text x="860" y="90" fill="#263238">AGV</text>
+        </g>
+        <g stroke="#1F4E79" stroke-width="2" fill="none" marker-end="url(#arr)">
+          <line x1="130" y1="90" x2="168" y2="90"/><line x1="280" y1="90" x2="318" y2="90"/>
+          <line x1="430" y1="90" x2="468" y2="90"/><line x1="620" y1="90" x2="658" y2="90"/>
+          <line x1="790" y1="90" x2="828" y2="90"/>
+        </g>
+      </svg>
+      <div class="img-caption">Arquitetura do condicionador de sinais do AGV — TP1 a TP4 são os pontos de teste para diagnóstico</div>
+    </div>`,
+        saturation: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 420 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Curva de transferência do AmpOp com regiões de saturação">
+        <line x1="60" y1="240" x2="390" y2="240" stroke="#263238" stroke-width="1.5"/>
+        <line x1="60" y1="20" x2="60" y2="240" stroke="#263238" stroke-width="1.5"/>
+        <text x="230" y="268" font-size="12" font-weight="bold" text-anchor="middle" fill="#263238">V+ − V− (μV)</text>
+        <text x="25" y="130" font-size="12" font-weight="bold" text-anchor="middle" fill="#263238" transform="rotate(-90 25 130)">Vout (V)</text>
+        <line x1="60" y1="60" x2="390" y2="60" stroke="#C00000" stroke-dasharray="4,4"/>
+        <line x1="60" y1="220" x2="390" y2="220" stroke="#C00000" stroke-dasharray="4,4"/>
+        <text x="395" y="65" font-size="10" fill="#C00000">+Vsat</text>
+        <text x="395" y="225" font-size="10" fill="#C00000">−Vsat</text>
+        <text x="395" y="130" font-size="10" fill="#607d8b">linear</text>
+        <path d="M 60 220 L 150 220 L 225 140 L 300 60 L 390 60" fill="none" stroke="#ED7D31" stroke-width="3"/>
+        <line x1="225" y1="20" x2="225" y2="240" stroke="#607d8b" stroke-dasharray="3,3"/>
+        <text x="225" y="250" font-size="10" text-anchor="middle" fill="#607d8b">0</text>
+      </svg>
+      <div class="img-caption">Curva de transferência do AmpOp: em malha fechada opera na região linear; fora dela, satura próximo aos trilhos</div>
+    </div>`,
+        challenge: () => `
+    <div class="img-frame">
+      <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fluxo do desafio: sensor, condicionamento, controlador e AGV">
+        <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#ED7D31"/></marker></defs>
+        <g font-size="12" font-weight="bold" text-anchor="middle">
+          <rect x="20" y="50" width="130" height="70" rx="10" fill="#fdecea" stroke="#C00000" stroke-width="2"/>
+          <text x="85" y="80" fill="#C00000">SENSOR</text>
+          <text x="85" y="98" font-size="10" fill="#8a1a1a" font-weight="400">sinal instável</text>
+          <text x="85" y="112" font-size="10" fill="#8a1a1a" font-weight="400">0,8 – 3,2 V</text>
+          <rect x="200" y="50" width="180" height="70" rx="10" fill="#fff8f2" stroke="#ED7D31" stroke-width="2.5" stroke-dasharray="6,4"/>
+          <text x="290" y="78" fill="#c96620">CONDICIONAMENTO</text>
+          <text x="290" y="96" font-size="10" fill="#8a4a1f" font-weight="400">buffer + filtro + comparador</text>
+          <text x="290" y="110" font-size="10" fill="#8a4a1f" font-weight="400">+ histerese</text>
+          <rect x="430" y="50" width="130" height="70" rx="10" fill="#f1f8ec" stroke="#70AD47" stroke-width="2"/>
+          <text x="495" y="80" fill="#4a7a2a">CONTROLADOR</text>
+          <text x="495" y="98" font-size="10" fill="#3c6b1f" font-weight="400">decisão confiável</text>
+          <text x="495" y="112" font-size="10" fill="#3c6b1f" font-weight="400">linha sim / não</text>
+          <rect x="600" y="50" width="80" height="70" rx="10" fill="#f1f4f7" stroke="#263238" stroke-width="2"/>
+          <text x="640" y="80" fill="#263238">AGV</text>
+          <text x="640" y="98" font-size="10" fill="#607d8b" font-weight="400">segue faixa</text>
+        </g>
+        <g stroke="#ED7D31" stroke-width="2.5" fill="none" marker-end="url(#arr2)">
+          <line x1="150" y1="85" x2="198" y2="85"/><line x1="380" y1="85" x2="428" y2="85"/>
+          <line x1="560" y1="85" x2="598" y2="85"/>
+        </g>
+        <text x="290" y="150" font-size="11" fill="#c96620" text-anchor="middle" font-style="italic">← é aqui que você vai atuar →</text>
+      </svg>
+      <div class="img-caption">O desafio central: transformar um sinal instável em uma decisão confiável</div>
+    </div>`,
+        agvRunning: () => `
+    <div class="img-frame" style="overflow:hidden;background:linear-gradient(180deg,#eef4fa 0%,#fff 100%)">
+      <svg viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animação do AGV percorrendo corretamente a faixa no piso">
+        <line x1="20" y1="100" x2="580" y2="100" stroke="#263238" stroke-width="10" stroke-dasharray="22 16"/>
+        <line x1="20" y1="100" x2="580" y2="100" stroke="#fdd835" stroke-width="2" stroke-dasharray="22 16" stroke-dashoffset="-1"/>
+        <text x="300" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#70AD47">MISSÃO CONCLUÍDA — AGV NA FAIXA</text>
+        <g class="agv-anim">
+          <rect x="0" y="66" width="64" height="34" rx="6" fill="#1F4E79" stroke="#0d2a44"/>
+          <text x="32" y="89" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">AGV</text>
+          <circle cx="14" cy="105" r="6" fill="#263238"/>
+          <circle cx="50" cy="105" r="6" fill="#263238"/>
+          <circle cx="12" cy="76" r="3" fill="#70AD47"/>
+        </g>
+      </svg>
+      <div class="img-caption">O AGV segue a faixa corretamente: sinal instável → decisão confiável → movimento preciso</div>
+    </div>`,
+      };
+
+      /* ==================== MÓDULOS ==================== */
+      const MODULES = [
+        {
+          id: 0,
+          icon: "🎯",
+          title: "Centro de Comando",
+          subtitle: "O Desafio do AGV",
+          xp: 20,
+          msep: "contextualizacao",
+          content: `
+      <span class="module-tag">MÓDULO 0 · CENTRO DE COMANDO</span>
+      <h2>O Desafio do AGV</h2>
+      <p>Você acaba de ser integrado à equipe de engenharia de uma indústria automatizada. Um dos <strong>Veículos Guiados Automaticamente (AGV)</strong> responsáveis pelo transporte interno começou a apresentar falhas de orientação.</p>
+      <div class="callout warn"><strong>Relatório de Falha #AGV-114:</strong> O AGV desvia da faixa de piso, para sem motivo aparente e corrige a trajetória de forma brusca. Os sensores continuam respondendo.</div>
+      ${SVG.challenge()}
+      <h3>O que sabemos</h3>
+      <ul>
+        <li>O sensor de linha entrega um sinal analógico que varia entre <span class="kbd">0,8 V</span> e <span class="kbd">3,2 V</span>.</li>
+        <li>Esse sinal sofre oscilações por <strong>ruído elétrico, sombras, irregularidades do piso e variação de velocidade</strong>.</li>
+        <li>O controlador precisa decidir apenas entre dois estados: <em>linha detectada</em> ou <em>linha não detectada</em>.</li>
+        <li>A substituição do sensor <strong>não é permitida</strong>.</li>
+      </ul>
+      <h3>Missão principal</h3>
+      <div class="callout info">Transformar o sinal variável e instável do sensor em uma <strong>informação elétrica estável, confiável e adequada</strong> à interpretação pelo controlador do AGV.</div>
+      <h3>O que você vai construir</h3>
+      <ol>
+        <li>Diagnóstico do sinal do sensor.</li>
+        <li>Compreensão dos amplificadores operacionais e osciladores.</li>
+        <li>Estudo de comparadores, filtros, histerese e buffer.</li>
+        <li>Montagem e teste em bancada (sob supervisão).</li>
+        <li>Dossiê técnico de integração ao AGV.</li>
+      </ol>
+      <div class="callout"><strong>Segurança em primeiro lugar:</strong> Desligue a alimentação antes de modificar conexões. Nunca energize um circuito sem autorização do professor. Faça inspeção cruzada.</div>
+      <h3>Análise inicial</h3>
+      <div id="ia-pre" class="ia">
+        <div class="ia-title">📝 Avaliação diagnóstica — reflexão inicial</div>
+        <div class="field"><label for="pre1">1. Qual é o problema descrito no relatório de falha?</label><textarea id="pre1" placeholder="Descreva o sintoma do AGV..."></textarea></div>
+        <div class="field"><label for="pre2">2. Por que o sensor pode apresentar instabilidade?</label><textarea id="pre2" placeholder="Liste causas possíveis..."></textarea></div>
+        <div class="field"><label for="pre3">3. Qual seria uma estratégia de solução?</label><textarea id="pre3" placeholder="Sugira uma abordagem técnica..."></textarea></div>
+        <button class="btn sm" id="savePre">Salvar reflexão</button>
+        <span id="preStatus" class="muted" style="font-size:.82rem;margin-left:.5rem"></span>
+      </div>`,
+          hint: "Observe o intervalo de tensão do sensor (0,8 V a 3,2 V) e pense: o controlador consegue interpretar um sinal contínuo que oscila?",
+          quiz: [
+            {
+              q: "Qual é o intervalo de tensão do sinal do sensor do AGV?",
+              options: [
+                "0 V a 5 V",
+                "0,8 V a 3,2 V",
+                "1,2 V a 4,8 V",
+                "2,0 V a 3,0 V",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Correto. Este é o intervalo especificado no relatório de falha.",
+                wrong:
+                  "Reveja o relatório: o sensor fornece entre 0,8 V e 3,2 V.",
+              },
+            },
+            {
+              q: 'Por que o controlador precisa de uma informação "confiável"?',
+              options: [
+                "Para economizar energia",
+                "Porque precisa decidir entre linha detectada e não detectada",
+                "Para reduzir a velocidade do AGV",
+                "Para controlar a temperatura do motor",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Exato. A decisão de dois estados depende de um sinal estável.",
+                wrong:
+                  "O controlador precisa tomar uma decisão binária: linha detectada ou não.",
+              },
+            },
+            {
+              q: "A substituição do sensor é permitida?",
+              options: [
+                "Sim, sempre",
+                "Não — a equipe deve condicionar o sinal existente",
+                "Somente com autorização do professor",
+                "Apenas se o sensor estiver queimado",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. A restrição faz parte do desafio.",
+                wrong:
+                  "A substituição do sensor NÃO é permitida — o problema deve ser resolvido pelo condicionamento de sinal.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 1,
+          icon: "🔌",
+          title: "Laboratório de Eletrônica Analógica",
+          subtitle: "Amplificadores Operacionais",
+          xp: 30,
+          msep: "desenvolvimento",
+          content: `
+      <span class="module-tag">MÓDULO 1 · LABORATÓRIO DE ELETRÔNICA ANALÓGICA</span>
+      <h2>Amplificadores Operacionais</h2>
+      <p>O <strong>amplificador operacional (AmpOp)</strong> é um circuito integrado que amplifica a diferença entre duas tensões de entrada. Possui altíssimo ganho e é a base dos circuitos de condicionamento de sinais do AGV.</p>
+      ${SVG.opAmp()}
+      <h3>1. Terminais do AmpOp</h3>
+      <div class="ia" id="ia-terminais">
+        <div class="ia-title">🔎 Clique nos terminais para ver a função</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;max-width:340px;margin:.5rem auto">
+          <button class="btn ghost sm" data-term="vin+">V+ (não inversora)</button>
+          <button class="btn ghost sm" data-term="vin-">V− (inversora)</button>
+          <button class="btn ghost sm" data-term="vout">Vout (saída)</button>
+          <button class="btn ghost sm" data-term="vcc+">Vcc+ (alimentação)</button>
+          <button class="btn ghost sm" data-term="vcc-">Vcc− / GND</button>
+          <button class="btn ghost sm" data-term="offset">Offset (nulos)</button>
+        </div>
+        <div id="termInfo" style="margin-top:.6rem;padding:.7rem;background:#eef4fa;border-radius:8px;font-size:.88rem;min-height:60px" aria-live="polite">
+          Selecione um terminal acima.
+        </div>
+      </div>
+      <h3>2. Encapsulamento e pinagem — LM358</h3>
+      <p>O <strong>LM358</strong> é um AmpOp duplo em encapsulamento DIP-8. O pino 1 é identificado pelo chanfro no corpo do CI.</p>
+      ${SVG.lm358()}
+      <table class="table">
+        <tr><th>Pino</th><th>Função</th></tr>
+        <tr><td>1</td><td>Saída 1</td></tr><tr><td>2</td><td>Entrada inversora 1</td></tr>
+        <tr><td>3</td><td>Entrada não inversora 1</td></tr><tr><td>4</td><td>GND</td></tr>
+        <tr><td>5</td><td>Entrada não inversora 2</td></tr><tr><td>6</td><td>Entrada inversora 2</td></tr>
+        <tr><td>7</td><td>Saída 2</td></tr><tr><td>8</td><td>Vcc+</td></tr>
+      </table>
+      <h3>3. Comparação — LM741</h3>
+      <p>O <strong>LM741</strong> é um AmpOp simples muito usado em aulas. Também em DIP-8, mas com pinagem diferente do LM358.</p>
+      ${SVG.lm741()}
+      <h3>4. Alimentação e saturação</h3>
+      <p>O AmpOp pode ser alimentado de forma <strong>dual</strong> (ex.: +5 V e −5 V) ou <strong>simples</strong> (ex.: +5 V e GND, usando Vcc/2 como referência). A saída NÃO é ilimitada: ela <strong>satura</strong> próximo aos trilhos.</p>
+      ${SVG.saturation()}
+      <div class="callout warn"><strong>Atenção técnica:</strong> O LM358 <strong>não é rail-to-rail</strong>. Sua saída não alcança necessariamente 5 V com alimentação de 5 V. Consulte o datasheet da versão utilizada.</div>
+      <h3>5. Regras de ouro (aproximações ideais)</h3>
+      <div class="callout info">
+        <strong>Regra 1:</strong> Idealmente, nenhuma corrente entra nas entradas do AmpOp.<br>
+        <strong>Regra 2:</strong> Com realimentação negativa e operando na região linear, o AmpOp tende a manter V+ = V−.
+      </div>
+      <p class="muted" style="font-size:.85rem">Essas aproximações NÃO devem ser aplicadas ao funcionamento em malha aberta (comparador).</p>
+      <h3>6. Configurações básicas</h3>
+      <div class="img-grid">${SVG.buffer()}${SVG.inverting()}</div>
+      ${SVG.nonInverting()}
+      <div class="ia" id="ia-ganho">
+        <div class="ia-title">🧮 Calculadora de ganho</div>
+        <div class="row">
+          <div class="field"><label for="gainCfg">Configuração</label>
+            <select id="gainCfg">
+              <option value="buf">Buffer (seguidor)</option>
+              <option value="inv">Inversor</option>
+              <option value="non" selected>Não inversor</option>
+            </select>
+          </div>
+          <div class="field"><label for="gainR1">R1 (kΩ)</label><input type="number" id="gainR1" value="10" min="0.1" step="0.1"></div>
+          <div class="field"><label for="gainR2">R2 (kΩ)</label><input type="number" id="gainR2" value="20" min="0.1" step="0.1"></div>
+          <div class="field"><label for="gainVin">Vin (V)</label><input type="number" id="gainVin" value="1" step="0.1"></div>
+        </div>
+        <div id="gainOut" class="formula" aria-live="polite">—</div>
+      </div>
+      <div class="callout"><strong>Exemplo do AGV:</strong> com R1 = 10 kΩ e R2 = 5 kΩ, o ganho não inversor é 1,5 e a saída teórica iria de 1,2 V a 4,8 V. Porém, com alimentação simples de 5 V o LM358 satura perto de Vcc − 1,5 V (≈ 3,5 V): o sinal de 3,2 V seria cortado. Por isso o condicionador do AGV usa um <strong>buffer</strong> (ganho 1).</div>`,
+          hint: "Consulte a tabela de pinagem do LM358. Lembre-se: o pino 8 é Vcc+ e o pino 4 é GND.",
+          quiz: [
+            {
+              q: "Qual pino do LM358 corresponde à alimentação positiva (Vcc+)?",
+              options: ["Pino 1", "Pino 4", "Pino 8", "Pino 5"],
+              correct: 2,
+              feedback: {
+                correct: "Correto. Pino 8 = Vcc+.",
+                wrong: "Consulte a tabela: o pino 8 é Vcc+ e o pino 4 é GND.",
+              },
+            },
+            {
+              q: "A configuração não inversora com R1=10kΩ e R2=20kΩ tem ganho de:",
+              options: ["1", "2", "3", "0,5"],
+              correct: 2,
+              feedback: {
+                correct: "Ganho = 1 + R2/R1 = 1 + 2 = 3.",
+                wrong: "Use Ganho = 1 + R2/R1 = 1 + 20/10 = 3.",
+              },
+            },
+            {
+              q: "Sobre o LM358, é correto afirmar que:",
+              options: [
+                "É rail-to-rail e a saída sempre alcança Vcc",
+                "Não é rail-to-rail — a saída tem limitações de excursão",
+                "Não pode ser alimentado com 5 V",
+                "Possui apenas um amplificador interno",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. O LM358 não é rail-to-rail.",
+                wrong:
+                  "O LM358 NÃO é rail-to-rail. Sua saída tem limitações de excursão próximas aos trilhos.",
+              },
+            },
+            {
+              q: 'Quando um AmpOp opera em malha aberta, a "regra 2" (V+ = V−) se aplica?',
+              options: [
+                "Sim, sempre",
+                "Não — a regra vale apenas em malha fechada com realimentação negativa",
+                "Sim, mas só com alimentação dual",
+                "Somente se a saída for 0 V",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Exato. Em malha aberta (comparador), o AmpOp satura.",
+                wrong:
+                  "A regra V+ = V− só vale em malha fechada com realimentação negativa.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 2,
+          icon: "📄",
+          title: "Documentação Técnica e Osciladores",
+          subtitle: "Datasheet e geração de sinais",
+          xp: 25,
+          msep: "desenvolvimento",
+          content: `
+      <span class="module-tag">MÓDULO 2 · DOCUMENTAÇÃO TÉCNICA E OSCILADORES</span>
+      <h2>Datasheet: a bíblia do componente</h2>
+      <p>O <strong>datasheet</strong> é o documento oficial do fabricante. Nunca projete sem consultá-lo. Use as abas abaixo para explorar os campos essenciais.</p>
+      <div class="ia" id="ia-datasheet">
+        <div class="ds-viewer">
+          <div class="ds-tabs" role="tablist">
+            <button role="tab" data-ds="pin" class="active">Pinagem</button>
+            <button role="tab" data-ds="vcc">Alimentação</button>
+            <button role="tab" data-ds="out">Saída</button>
+            <button role="tab" data-ds="sig">Slew rate / GBW</button>
+          </div>
+          <div class="ds-body" id="dsBody" role="tabpanel"></div>
+        </div>
+      </div>
+      <h3>Osciladores</h3>
+      <p>Osciladores geram <strong>sinais periódicos</strong> — senoidal, quadrada ou triangular. São úteis como <strong>fonte de teste</strong> para validar o condicionador.</p>
+      <div class="ia" id="ia-gerador">
+        <div class="ia-title">📶 Gerador didático de sinais</div>
+        <div class="row">
+          <div class="field"><label for="genWave">Forma de onda</label>
+            <select id="genWave"><option value="sine">Senoidal</option><option value="square" selected>Quadrada</option><option value="triangle">Triangular</option></select>
+          </div>
+          <div class="field"><label for="genFreq">Frequência: <span class="val" id="genFreqV">1000</span> Hz</label><input type="range" id="genFreq" min="100" max="5000" step="50" value="1000"></div>
+          <div class="field"><label for="genAmp">Amplitude: <span class="val" id="genAmpV">2,5</span> V</label><input type="range" id="genAmp" min="0.5" max="5" step="0.1" value="2.5"></div>
+          <div class="field"><label for="genDuty">Duty cycle: <span class="val" id="genDutyV">50</span> %</label><input type="range" id="genDuty" min="10" max="90" step="5" value="50"></div>
+        </div>
+        <canvas id="genCanvas" width="600" height="180" aria-label="Onda gerada didaticamente com forma, frequência, amplitude e duty cycle ajustáveis"></canvas>
+        <p class="muted" style="font-size:.82rem;margin-top:.4rem">Sinal de referência sugerido: <strong>1 kHz</strong>.</p>
+      </div>
+      <h3>O CI 555 em modo astável</h3>
+      <p>O <strong>555</strong> é um dos CIs mais usados para gerar onda quadrada. Em configuração astável, a frequência depende de R1, R2 e C:</p>
+      <div class="formula">f ≈ 1,44 / ((R1 + 2·R2) · C)</div>
+      <div class="ia">
+        <div class="ia-title">🧮 Calculadora do 555</div>
+        <div class="row">
+          <div class="field"><label for="t555R1">R1 (kΩ)</label><input type="number" id="t555R1" value="10" min="0.1" step="0.1"></div>
+          <div class="field"><label for="t555R2">R2 (kΩ)</label><input type="number" id="t555R2" value="47" min="0.1" step="0.1"></div>
+          <div class="field"><label for="t555C">C (nF)</label><input type="number" id="t555C" value="10" min="0.1" step="0.1"></div>
+        </div>
+        <div id="t555Out" class="formula" aria-live="polite">—</div>
+        <p class="muted" style="font-size:.82rem">Compare o valor calculado com o datasheet da versão do 555 utilizada.</p>
+      </div>`,
+          hint: 'Um datasheet tem seções padronizadas: "Pin Configuration", "Electrical Characteristics", "Absolute Maximum Ratings".',
+          quiz: [
+            {
+              q: 'O que significa "Pin Configuration" em um datasheet?',
+              options: [
+                "A cor do componente",
+                "A pinagem oficial do encapsulamento",
+                "O preço do CI",
+                "A temperatura máxima",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. É o diagrama de pinos.",
+                wrong: '"Pin Configuration" é a pinagem oficial do componente.',
+              },
+            },
+            {
+              q: "Qual é a função de um oscilador em um circuito de teste?",
+              options: [
+                "Reduzir a tensão de alimentação",
+                "Gerar um sinal periódico de referência",
+                "Aumentar o ganho do AmpOp",
+                "Filtrar ruído de alta frequência",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Exato. O oscilador fornece um sinal conhecido para validar o condicionador.",
+                wrong:
+                  "O oscilador gera um sinal periódico de referência para testes.",
+              },
+            },
+            {
+              q: "Uma onda quadrada com período T=0,5 ms tem frequência de:",
+              options: ["500 Hz", "1 kHz", "2 kHz", "5 kHz"],
+              correct: 2,
+              feedback: {
+                correct: "f = 1/T = 1/0,0005 = 2000 Hz = 2 kHz.",
+                wrong: "f = 1/T = 1/0,0005 s = 2000 Hz = 2 kHz.",
+              },
+            },
+            {
+              q: "O que é duty cycle?",
+              options: [
+                "A frequência do sinal",
+                "A razão entre o tempo em nível alto e o período",
+                "A amplitude máxima",
+                "A tensão de offset",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Duty cycle = (t_alto / T) × 100%.",
+                wrong: "Duty cycle = (tempo em nível alto / período) × 100%.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 3,
+          icon: "⚙️",
+          title: "Engenharia de Condicionamento",
+          subtitle: "Comparador, histerese e filtros",
+          xp: 40,
+          msep: "desenvolvimento",
+          content: `
+      <span class="module-tag">MÓDULO 3 · ENGENHARIA DE CONDICIONAMENTO</span>
+      <h2>Condicionamento de Sinais</h2>
+      <p>Arquitetura do AGV:</p>
+      ${SVG.architecture()}
+      <h3>Comparador: o juiz eletrônico</h3>
+      <p>Em malha aberta, o AmpOp compara Vin com uma tensão de referência (Vref). Se Vin &gt; Vref, a saída satura em nível alto. Se Vin &lt; Vref, satura em nível baixo.</p>
+      ${SVG.comparator()}
+      <div class="formula">Vref = Vcc × [R2 / (R1 + R2)]</div>
+      <p>Exemplo: Vcc=5 V, R1=10 kΩ, R2=6,7 kΩ → Vref ≈ 2,0 V.</p>
+      <div class="ia" id="ia-comparador">
+        <div class="ia-title">⚖️ Simulador de comparador</div>
+        <div class="row">
+          <div class="field"><label for="cmpVin">Vin: <span class="val" id="cmpVinV">1,0</span> V</label><input type="range" id="cmpVin" min="0" max="5" step="0.1" value="1"></div>
+          <div class="field"><label for="cmpVref">Vref: <span class="val" id="cmpVrefV">2,0</span> V</label><input type="range" id="cmpVref" min="0" max="5" step="0.1" value="2"></div>
+        </div>
+        <div id="cmpOut" class="formula" aria-live="polite"></div>
+        <div class="callout" style="margin-top:.5rem;font-size:.82rem">Modelo <strong>didático idealizado</strong>. Não substitui simulação elétrica real do LM358.</div>
+      </div>
+      <h3>Ruído: o vilão do AGV</h3>
+      <p>Quando o sinal oscila em torno da referência, o comparador comuta várias vezes — o AGV "treme" na pista. É exatamente o sintoma relatado.</p>
+      <h3>Histerese — Schmitt Trigger</h3>
+      <p>Aplica-se <strong>realimentação positiva</strong>, criando dois limiares (superior e inferior). A saída só muda quando o sinal cruza efetivamente um limiar.</p>
+      ${SVG.hysteresis()}
+      ${SVG.hysteresisCurve()}
+      <div class="ia" id="ia-hist">
+        <div class="ia-title">📈 Comparação ao vivo: sem histerese × com histerese</div>
+        <div class="row">
+          <div class="field"><label for="hTh">Limiar superior: <span class="val" id="hThV">2,5</span> V</label><input type="range" id="hTh" min="2.1" max="4.5" step="0.1" value="2.5"></div>
+          <div class="field"><label for="hTl">Limiar inferior: <span class="val" id="hTlV">1,5</span> V</label><input type="range" id="hTl" min="0.5" max="2.0" step="0.1" value="1.5"></div>
+        </div>
+        <canvas id="histCanvas" width="600" height="250" aria-label="Gráfico comparando contagem de comutações com e sem histerese"></canvas>
+        <p class="muted" style="font-size:.82rem">A banda entre os dois limiares é a <strong>banda morta</strong>. Ruídos dentro dela não afetam a saída.</p>
+      </div>
+      <h3>Filtros</h3>
+      ${SVG.rcFilter()}
+      <div class="formula">fc = 1 / (2π · R · C)</div>
+      <div class="ia" id="ia-filtro">
+        <div class="ia-title">🧮 Calculadora de filtro RC</div>
+        <div class="row">
+          <div class="field"><label for="fR">R (kΩ)</label><input type="number" id="fR" value="1" step="0.1" min="0.1"></div>
+          <div class="field"><label for="fC">C (nF)</label><input type="number" id="fC" value="100" step="1" min="0.1"></div>
+        </div>
+        <div id="fOut" class="formula" aria-live="polite">fc ≈ 1,59 kHz</div>
+      </div>
+      <h3>Buffer (seguidor de tensão)</h3>
+      ${SVG.buffer()}
+      <p>Ganho unitário (Vout = Vin), alta impedância de entrada e baixa impedância de saída. <strong>Isola o sensor</strong> do restante do circuito.</p>
+      <h3>Arquitetura completa</h3>
+      <div class="callout ok" style="text-align:center;font-weight:600">Sensor → Buffer → Filtro RC → Comparador com histerese → Controlador</div>
+      <p>Pontos de teste: <span class="kbd">TP1</span> (sensor), <span class="kbd">TP2</span> (buffer), <span class="kbd">TP3</span> (filtro), <span class="kbd">TP4</span> (comparador).</p>`,
+          hint: "Compare: o comparador tradicional comuta toda vez que o sinal cruza Vref. A histerese cria dois limiares para impedir comutações espúrias.",
+          quiz: [
+            {
+              q: "O que define a saída de um comparador em malha aberta?",
+              options: [
+                "A corrente nas entradas",
+                "A relação entre Vin e Vref",
+                "A temperatura ambiente",
+                "O valor de R1 apenas",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Exato. Vin > Vref → alto; Vin < Vref → baixo.",
+                wrong: "A saída depende da comparação entre Vin e Vref.",
+              },
+            },
+            {
+              q: "Com Vcc=5 V, R1=10 kΩ e R2=6,7 kΩ, Vref é aproximadamente:",
+              options: ["1,0 V", "2,0 V", "3,0 V", "5,0 V"],
+              correct: 1,
+              feedback: {
+                correct: "Vref = 5 × (6,7/16,7) ≈ 2,0 V.",
+                wrong: "Use Vref = Vcc × R2/(R1+R2) = 5 × 6,7/16,7 ≈ 2,0 V.",
+              },
+            },
+            {
+              q: "A histerese (Schmitt Trigger) serve para:",
+              options: [
+                "Aumentar o ganho",
+                "Reduzir comutações espúrias causadas por ruído",
+                "Filtrar altas frequências",
+                "Isolar o sensor",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Correto. A histerese cria dois limiares e estabiliza a saída.",
+                wrong:
+                  "A histerese reduz comutações espúrias próximas ao limiar.",
+              },
+            },
+            {
+              q: "A função principal do buffer no condicionador é:",
+              options: [
+                "Amplificar o sinal",
+                "Isolar o sensor e evitar carregamento",
+                "Gerar sinal periódico",
+                "Filtrar ruído",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Exato. O buffer tem ganho unitário e alta impedância de entrada.",
+                wrong:
+                  "O buffer isola o sensor (alta impedância de entrada, baixa de saída).",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 4,
+          icon: "🧩",
+          title: "Laboratório de Montagem",
+          subtitle: "Protoboard, organização e inspeção",
+          xp: 30,
+          msep: "desenvolvimento",
+          requirements: [
+            {
+              id: "safety",
+              label: "Registrar o checklist de segurança",
+              check: (u) => u.safetyOk === true,
+            },
+          ],
+          content: `
+      <span class="module-tag">MÓDULO 4 · LABORATÓRIO DE MONTAGEM</span>
+      <h2>Protoboard: organização e segurança</h2>
+      <p>A protoboard é uma placa de ensaio com <strong>molas metálicas internas</strong> que conectam furos em linhas e colunas.</p>
+      <ul>
+        <li><strong>Linhas de alimentação</strong> (superior e inferior): interligadas horizontalmente.</li>
+        <li><strong>Colunas centrais</strong>: cada coluna tem 5 furos interligados verticalmente.</li>
+        <li><strong>Canal central</strong>: separa os dois lados — o CI é posicionado sobre ele.</li>
+      </ul>
+      <h3>Desafio: encontre os erros</h3>
+      <p>Cada situação abaixo descreve uma falha de montagem. Identifique a causa e clique em "Verificar" para receber o feedback. Você pode tentar quantas vezes quiser.</p>
+      <div class="ia" id="ia-erro">
+        <div id="erroList" style="display:grid;gap:1rem"></div>
+      </div>
+      <h3>Checklist de segurança</h3>
+      <div class="ia">
+        <div class="ia-title">🛡️ Inspeção antes da energização</div>
+        <label class="done-chk"><input type="checkbox" data-safety="ci"> CI posicionado corretamente (pino 1 identificado)</label>
+        <label class="done-chk"><input type="checkbox" data-safety="alim"> Vcc e GND nos terminais corretos</label>
+        <label class="done-chk"><input type="checkbox" data-safety="jumpers"> Jumpers firmes e sem curtos</label>
+        <label class="done-chk"><input type="checkbox" data-safety="fonte"> Fonte com limite de corrente ajustado</label>
+        <label class="done-chk"><input type="checkbox" data-safety="cruzada"> Inspeção cruzada realizada por um colega</label>
+        <button class="btn sm" id="safetyDone" style="margin-top:.5rem">Registrar inspeção</button>
+        <span id="safetyStatus" class="muted" style="font-size:.82rem;margin-left:.5rem"></span>
+      </div>
+      <div class="callout warn"><strong>Atenção:</strong> A energização depende de autorização do professor. A plataforma NÃO libera energização automaticamente.</div>`,
+          hint: "Uma das falhas mais comuns é a inversão de alimentação: Vcc no lugar de GND e vice-versa. Outra é o CI invertido (pino 1 trocado com o 8).",
+          quiz: [
+            {
+              q: "Qual é a função do canal central da protoboard?",
+              options: [
+                "Conduzir corrente",
+                "Separar os dois lados — o CI é posicionado sobre ele",
+                "Conectar as linhas de alimentação",
+                "Aumentar a capacitância",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. O canal central separa os dois lados do CI.",
+                wrong:
+                  "O canal central separa as duas fileiras de furos; o CI fica sobre ele.",
+              },
+            },
+            {
+              q: "Antes de energizar qualquer montagem, deve-se:",
+              options: [
+                "Aumentar a tensão ao máximo",
+                "Ajustar o limite de corrente da fonte e fazer inspeção cruzada",
+                "Ligar direto na tomada",
+                "Remover o CI",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Exato. Segurança primeiro.",
+                wrong:
+                  "Sempre ajuste o limite de corrente e faça inspeção cruzada.",
+              },
+            },
+            {
+              q: "Se o CI aquece rapidamente após energizar, a causa provável é:",
+              options: [
+                "Falta de decoupling",
+                "Alimentação invertida",
+                "Frequência muito alta",
+                "Sinal de entrada fraco",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Alimentação invertida é uma causa clássica.",
+                wrong:
+                  "Aquecimento imediato costuma indicar alimentação invertida.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 5,
+          icon: "📏",
+          title: "Instrumentação e Medições",
+          subtitle: "Fonte, multímetro e osciloscópio",
+          xp: 35,
+          msep: "desenvolvimento",
+          content: `
+      <span class="module-tag">MÓDULO 5 · INSTRUMENTAÇÃO E MEDIÇÕES</span>
+      <h2>Fonte de bancada</h2>
+      <ul>
+        <li>Ajuste de tensão.</li>
+        <li><strong>Limitação de corrente</strong> — protege o circuito em caso de curto.</li>
+        <li>Bornes positivo, negativo e GND.</li>
+      </ul>
+      <p>Configure, por exemplo, <span class="kbd">5 V</span> e limite de <span class="kbd">100 mA</span>.</p>
+      <h3>Multímetro</h3>
+      <table class="table">
+        <tr><th>Grandeza</th><th>Como medir</th></tr>
+        <tr><td>Tensão (V)</td><td>Em paralelo com o componente</td></tr>
+        <tr><td>Corrente (A)</td><td>Em série com o circuito</td></tr>
+        <tr><td>Resistência (Ω)</td><td>Circuito desenergizado</td></tr>
+        <tr><td>Continuidade</td><td>Circuito desenergizado</td></tr>
+      </table>
+      <div class="callout warn"><strong>Nunca</strong> meça resistência em circuitos energizados. <strong>Nunca</strong> meça corrente em paralelo (curto).</div>
+      <h3>Osciloscópio</h3>
+      <div class="ia" id="ia-oscilo">
+        <div class="ia-title">📊 Osciloscópio didático</div>
+        <div class="row">
+          <div class="field"><label for="osVd">V/div: <span class="val" id="osVdV">1,0</span></label><input type="range" id="osVd" min="0.5" max="2" step="0.5" value="1"></div>
+          <div class="field"><label for="osTd">Tempo/div (ms): <span class="val" id="osTdV">0,5</span></label><input type="range" id="osTd" min="0.1" max="1" step="0.1" value="0.5"></div>
+        </div>
+        <canvas id="osCanvas" width="600" height="200" aria-label="Tela de osciloscópio simulando onda quadrada"></canvas>
+        <div id="osCalc" class="formula" aria-live="polite">—</div>
+      </div>
+      <div class="formula">Amplitude = divisões verticais × V/div<br>Período = divisões horizontais × (tempo/div)<br>Frequência = 1/T<br>Duty cycle = (t_alto / T) × 100%</div>`,
+          hint: "Tensão se mede em paralelo (pontas sobre o componente). Corrente se mede em série.",
+          quiz: [
+            {
+              q: "Para medir corrente com multímetro, o instrumento deve ser conectado:",
+              options: [
+                "Em paralelo",
+                "Em série",
+                "Com o circuito desligado",
+                "Após a carga",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Corrente em série.",
+                wrong:
+                  "Corrente se mede em SÉRIE. Em paralelo, o multímetro causaria curto.",
+              },
+            },
+            {
+              q: "O limite de corrente na fonte de bancada serve para:",
+              options: [
+                "Aumentar a tensão",
+                "Proteger o circuito em caso de curto",
+                "Reduzir o ruído",
+                "Regular a frequência",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Exato. Limita a corrente máxima, protegendo o circuito.",
+                wrong:
+                  "A limitação de corrente protege o circuito contra curtos.",
+              },
+            },
+            {
+              q: "Se um sinal tem amplitude de 3 divisões com escala de 1 V/div, sua amplitude é:",
+              options: ["1 V", "2 V", "3 V", "6 V"],
+              correct: 2,
+              feedback: {
+                correct: "3 div × 1 V/div = 3 V.",
+                wrong:
+                  "Multiplique divisões verticais pela escala: 3 × 1 = 3 V.",
+              },
+            },
+            {
+              q: "É seguro medir resistência em circuito energizado?",
+              options: [
+                "Sim, sempre",
+                "Não — o circuito deve estar desenergizado",
+                "Somente em CC",
+                "Somente em CA",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Correto. Meça resistência apenas com circuito desenergizado.",
+                wrong: "NUNCA meça resistência em circuito energizado.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 6,
+          icon: "🔍",
+          title: "Central de Diagnóstico",
+          subtitle: "Análise de falhas",
+          xp: 50,
+          msep: "analise",
+          requirements: [
+            {
+              id: "case",
+              label: "Revelar a análise do estudo de caso",
+              check: (u) => !!u.reflections.dg_revealed,
+            },
+          ],
+          content: `
+      <span class="module-tag">MÓDULO 6 · DIAGNÓSTICO E ANÁLISE DE FALHAS</span>
+      <h2>Método de diagnóstico em cinco passos</h2>
+      <ol>
+        <li>Descrever o sintoma.</li>
+        <li>Localizar o bloco suspeito.</li>
+        <li>Medir pontos-chave.</li>
+        <li>Comparar com o esperado.</li>
+        <li>Corrigir e retestar.</li>
+      </ol>
+      <h3>Estudo de caso obrigatório</h3>
+      <div class="callout warn">
+        <strong>Sintoma:</strong> o comparador entrega <strong>≈ 3,5 V</strong> (saturação do LM358 com alimentação de 5 V) mesmo com o sensor sobre o piso escuro.<br>
+        <strong>Medições:</strong> Vin = 1,0 V; Vref esperada = 2,0 V; Vref medida = 0,5 V.
+      </div>
+      <p>Percorra as etapas abaixo. A análise só é revelada depois que você registra sua hipótese.</p>
+      <div class="ia" id="ia-caso">
+        <div class="ia-title">🕵️ Investigação guiada</div>
+        <div class="field"><label for="dg1">1. Sintoma observado</label><textarea id="dg1" placeholder="Descreva o sintoma..."></textarea></div>
+        <div class="field"><label for="dg2">2. Hipótese (o que pode causar?)</label><textarea id="dg2" placeholder="Formule sua hipótese..."></textarea></div>
+        <div class="field"><label for="dg3">3. Medição realizada e resultado</label><textarea id="dg3" placeholder="Qual ponto você mediria? Qual valor esperaria?"></textarea></div>
+        <button class="btn sm" id="dgBtn">Confirmar investigação e revelar análise</button>
+        <div id="dgOut" class="fb" style="display:none;margin-top:.6rem" role="status" aria-live="polite"></div>
+      </div>
+      <h3>Tabela de falhas comuns</h3>
+      <table class="table">
+        <tr><th>Sintoma</th><th>Causa provável</th><th>Investigação</th></tr>
+        <tr><td>Saída sempre alta (Vin baixo)</td><td>Vref abaixo do esperado</td><td>Medir Vref</td></tr>
+        <tr><td>Saída sempre baixa</td><td>Sensor desconectado</td><td>Medir Vin</td></tr>
+        <tr><td>Saída trepidando</td><td>Falta de histerese</td><td>Observar no osciloscópio</td></tr>
+        <tr><td>CI esquentando</td><td>Alimentação invertida</td><td>Verificar pinagem</td></tr>
+        <tr><td>Tensão errada</td><td>Resistor incorreto</td><td>Medir resistência</td></tr>
+        <tr><td>Nada funciona</td><td>Ausência de GND comum</td><td>Verificar continuidade</td></tr>
+      </table>`,
+          hint: "Compare a Vref medida com a esperada. Uma diferença grande (0,5 V × 2,0 V) aponta para o divisor de Vref (resistor errado, em curto ou aberto).",
+          quiz: [
+            {
+              q: "Qual é o primeiro passo do método de diagnóstico?",
+              options: [
+                "Trocar o CI",
+                "Descrever o sintoma",
+                "Medir a saída",
+                "Comprar componentes",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Sempre começar descrevendo o sintoma.",
+                wrong: "O primeiro passo é descrever o sintoma com precisão.",
+              },
+            },
+            {
+              q: "Saída sempre alta com Vin baixo. A causa provável é:",
+              options: [
+                "Sensor desconectado",
+                "Vref muito baixa (divisor com defeito)",
+                "Falta de histerese",
+                "Offset alto",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Com Vref abaixo do esperado, Vin passa a superar Vref e o comparador satura em alto.",
+                wrong: "Se a saída está sempre alta, investigue a Vref.",
+              },
+            },
+            {
+              q: 'Saída "trepidando" perto da referência indica:',
+              options: [
+                "Falta de histerese",
+                "Curto-circuito",
+                "CI queimado",
+                "Fonte desligada",
+              ],
+              correct: 0,
+              feedback: {
+                correct:
+                  "Exato. Sem histerese, o ruído causa múltiplas comutações.",
+                wrong: "A trepidação é típica de falta de histerese.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 7,
+          icon: "📋",
+          title: "Documentação Técnica",
+          subtitle: "Registros, medições e dossiê",
+          xp: 40,
+          msep: "sintese",
+          requirements: [
+            {
+              id: "meas",
+              label: "Registrar pelo menos 1 medição na tabela",
+              check: (u) => u.measurements.length >= 1,
+            },
+          ],
+          content: `
+      <span class="module-tag">MÓDULO 7 · DOCUMENTAÇÃO E REGISTRO</span>
+      <h2>Registro técnico e rastreabilidade</h2>
+      <p>Sem documentação, uma solução não é reproduzível. Registre:</p>
+      <ul>
+        <li>Ponto de teste (TP1, TP2...).</li>
+        <li>Grandeza e valor medido.</li>
+        <li>Unidade, condição, instrumento.</li>
+        <li>Valor esperado e observação.</li>
+      </ul>
+      <h3>Tabela de medições</h3>
+      <div class="ia">
+        <div class="ia-title">📏 Registro de medições</div>
+        <div class="form-grid">
+          <div class="field"><label for="mTP">Ponto de teste</label><input id="mTP" placeholder="TP1, TP2..."></div>
+          <div class="field"><label for="mQty">Grandeza</label>
+            <select id="mQty"><option>Tensão</option><option>Corrente</option><option>Resistência</option><option>Continuidade</option></select>
+          </div>
+          <div class="field"><label for="mVal">Valor medido</label><input id="mVal" type="number" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label for="mUnit">Unidade</label>
+            <select id="mUnit"><option>V</option><option>mV</option><option>A</option><option>mA</option><option>Ω</option><option>kΩ</option></select>
+          </div>
+          <div class="field"><label for="mCond">Condição</label><input id="mCond" placeholder="Ex.: Vin < Vref"></div>
+          <div class="field"><label for="mInstr">Instrumento</label><input id="mInstr" placeholder="Multímetro, osciloscópio..."></div>
+          <div class="field"><label for="mExp">Valor esperado</label><input id="mExp" placeholder="2,0 V"></div>
+          <div class="field full"><label for="mObs">Observação</label><input id="mObs" placeholder="Análise do estudante..."></div>
+        </div>
+        <button class="btn sm" id="mAdd" style="margin-top:.6rem">➕ Adicionar medição</button>
+        <span id="mStatus" class="muted" style="font-size:.82rem;margin-left:.5rem"></span>
+        <div id="mList" style="margin-top:.9rem"></div>
+        <button class="btn ghost sm" id="mExport" style="margin-top:.5rem">⬇ Exportar CSV</button>
+      </div>
+      <div class="callout ok"><strong>Exemplo (didático):</strong> TP1 (sensor): 1,5 V · TP2 (buffer): 1,5 V · TP3 (após filtro): 1,5 V com menos ruído · TP4 (comparador, Vref = 2,0 V): ≈ 0,1 V, pois Vin &lt; Vref</div>
+      <h3>Ficha técnica / Mini-dossiê</h3>
+      <div class="ia">
+        <div class="ia-title">📄 Mini-dossiê de integração ao AGV</div>
+        <div class="form-grid">
+          <div class="field"><label for="dEq">Equipe</label><input id="dEq" placeholder="Ex.: Equipe Alfa"></div>
+          <div class="field full"><label for="dInt">Integrantes</label><input id="dInt" placeholder="Nomes separados por vírgula"></div>
+          <div class="field"><label for="dVmin">Vin mínimo observado</label><input id="dVmin" placeholder="0,8 V"></div>
+          <div class="field"><label for="dVmax">Vin máximo observado</label><input id="dVmax" placeholder="3,2 V"></div>
+          <div class="field"><label for="dVref">Vref adotada</label><input id="dVref" placeholder="2,0 V"></div>
+          <div class="field"><label for="dVoLow">Vout abaixo da referência</label><input id="dVoLow" placeholder="0,1 V"></div>
+          <div class="field"><label for="dVoHi">Vout acima da referência</label><input id="dVoHi" placeholder="≈ 3,5 V (LM358 com 5 V)"></div>
+          <div class="field"><label for="dFalha">Falha identificada</label><input id="dFalha" placeholder="Ex.: R2 com valor incorreto"></div>
+          <div class="field"><label for="dCorr">Correção realizada</label><input id="dCorr" placeholder="Ex.: Trocar R2 por 6,8 kΩ"></div>
+          <div class="field full"><label for="dEvid">Evidência da correção</label><textarea id="dEvid" placeholder="Descreva fotos, medições, reteste..."></textarea></div>
+          <div class="field full"><label for="dRec">Recomendação para o AGV</label><textarea id="dRec" placeholder="Sua recomendação técnica..."></textarea></div>
+        </div>
+        <button class="btn acc" id="dSave" style="margin-top:.6rem">💾 Salvar dossiê</button>
+        <button class="btn ghost sm" id="dExport" style="margin-top:.6rem">⬇ Exportar dossiê (.txt)</button>
+        <span id="dStatus" class="muted" style="font-size:.82rem;margin-left:.5rem"></span>
+      </div>`,
+          hint: "A rastreabilidade exige que outra pessoa consiga reproduzir seu teste: registre unidade, condição, instrumento e valor esperado.",
+          quiz: [
+            {
+              q: "Qual informação NÃO é essencial em um registro de medição?",
+              options: [
+                "Grandeza medida",
+                "Valor medido e unidade",
+                "Cor favorita do técnico",
+                "Condição do circuito",
+              ],
+              correct: 2,
+              feedback: {
+                correct: "Cor favorita não é dado técnico.",
+                wrong:
+                  "Cor favorita não é dado técnico. Os outros itens são essenciais.",
+              },
+            },
+            {
+              q: "A rastreabilidade técnica permite:",
+              options: [
+                "Aumentar o ganho",
+                "Reproduzir o teste e validar a solução",
+                "Reduzir ruído",
+                "Comprar componentes",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Rastreabilidade = reproduzir e validar.",
+                wrong:
+                  "Rastreabilidade permite que outra pessoa reproduza o teste.",
+              },
+            },
+            {
+              q: "Qual grandeza é medida em série?",
+              options: ["Tensão", "Corrente", "Resistência", "Continuidade"],
+              correct: 1,
+              feedback: {
+                correct: "Correto. Corrente em série.",
+                wrong: "Apenas a corrente se mede em série.",
+              },
+            },
+          ],
+        },
+
+        {
+          id: 8,
+          icon: "🏁",
+          title: "Integração Final",
+          subtitle: "Missão Concluída",
+          xp: 60,
+          msep: "sintese",
+          content: `
+      <span class="module-tag">MÓDULO 8 · INTEGRAÇÃO FINAL</span>
+      <h2>Sistema completo</h2>
+      ${SVG.architecture()}
+      ${SVG.agvRunning()}
+      <h3>O que você deve demonstrar</h3>
+      <ul>
+        <li>Sinal de entrada entre 0,8 V e 3,2 V.</li>
+        <li>Isolamento do sensor (buffer).</li>
+        <li>Redução de ruído (filtro).</li>
+        <li>Decisão por comparação.</li>
+        <li>Estabilidade proporcionada pela histerese.</li>
+        <li>Saída interpretável pelo controlador.</li>
+        <li>GND comum entre blocos.</li>
+        <li>Pontos de teste documentados.</li>
+      </ul>
+      <h3>Missão final — apresentação</h3>
+      <p>Prepare a apresentação da sua solução. Marque os itens do checklist:</p>
+      <label class="done-chk"><input type="checkbox" data-final="1"> Expliquei o problema inicial</label>
+      <label class="done-chk"><input type="checkbox" data-final="2"> Descrevi os blocos do condicionador</label>
+      <label class="done-chk"><input type="checkbox" data-final="3"> Justifiquei a função de cada estágio</label>
+      <label class="done-chk"><input type="checkbox" data-final="4"> Apresentei medições registradas</label>
+      <label class="done-chk"><input type="checkbox" data-final="5"> Expliquei a falha identificada</label>
+      <label class="done-chk"><input type="checkbox" data-final="6"> Apresentei a correção</label>
+      <label class="done-chk"><input type="checkbox" data-final="7"> Entreguei a ficha técnica</label>
+      <label class="done-chk"><input type="checkbox" data-final="8"> Elaborei o mini-dossiê</label>
+      <div class="callout" style="margin-top:1rem;text-align:center;background:#fff8f2">
+        <strong style="font-size:1.1rem;color:var(--accent-d)">🏁 MISSÃO CONCLUÍDA!</strong><br>
+        <em>"Hoje transformamos um sinal instável em uma decisão confiável. Na próxima missão, essa decisão vira movimento."</em><br>
+        <small class="muted">Conexão com o Encontro 07 — Controle dos Motores.</small>
+      </div>`,
+          hint: "Use suas próprias palavras e cite as medições registradas no módulo 7.",
+          quiz: [
+            {
+              q: "Qual é a ordem correta dos blocos do condicionador?",
+              options: [
+                "Sensor → Comparador → Buffer → Controlador",
+                "Sensor → Buffer → Filtro → Comparador com histerese → Controlador",
+                "Filtro → Sensor → Buffer → Comparador",
+                "Controlador → Sensor → Buffer → Filtro",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Correto! Essa é a arquitetura funcional do condicionador.",
+                wrong:
+                  "A ordem é: Sensor → Buffer → Filtro → Comparador com histerese → Controlador.",
+              },
+            },
+            {
+              q: "Por que é necessário um GND comum entre os blocos?",
+              options: [
+                "Para economizar cabos",
+                "Sem GND comum, as tensões de referência não são compartilhadas",
+                "Para aumentar o ganho",
+                "Para reduzir a corrente",
+              ],
+              correct: 1,
+              feedback: {
+                correct:
+                  "Exato. Sem GND comum, as tensões não têm referência compartilhada.",
+                wrong:
+                  "Sem GND comum, as tensões de referência se tornam inconsistentes entre os blocos.",
+              },
+            },
+            {
+              q: "O que o buffer adiciona ao condicionador?",
+              options: [
+                "Ganho alto",
+                "Isolamento do sensor e adaptação de impedância",
+                "Geração de sinal",
+                "Comparação com Vref",
+              ],
+              correct: 1,
+              feedback: {
+                correct: "Correto. O buffer isola e adapta impedância.",
+                wrong:
+                  "O buffer fornece isolamento e adapta impedância (ganho unitário).",
+              },
+            },
+          ],
+        },
+      ];
+
+      /* ==================== ESTADO ==================== */
+      function getInitialState() {
+        return {
+          version: STORAGE_VERSION,
+          student: {
+            name: "",
+            xp: 0,
+            badges: [],
+            completed: [],
+            quizScores: {},
+            answeredQs: {},
+            measurements: [],
+            dossier: {},
+            reflections: {},
+            safetyChecks: {},
+            safetyOk: false,
+            certificateDate: null,
+          },
+          view: "dashboard",
+          currentModule: null,
+        };
+      }
+
+      let state = loadState();
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return getInitialState();
+          const s = JSON.parse(raw);
+          const base = getInitialState();
+          const st = Object.assign(base, s, {
+            student: Object.assign(base.student, s.student || {}),
+          });
+          const V = [
+            "dashboard",
+            "map",
+            "module",
+            "lab",
+            "inventory",
+            "results",
+            "certificate",
+          ];
+          if (!V.includes(st.view)) st.view = "dashboard";
+          if (
+            st.view === "module" &&
+            !(
+              Number.isInteger(st.currentModule) &&
+              st.currentModule >= 0 &&
+              st.currentModule < MODULES.length
+            )
+          )
+            st.view = "map";
+          return st;
+        } catch (e) {
+          return getInitialState();
+        }
+      }
+
+      let _saveTimer = null;
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          /* storage off */
+        }
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(flashSave, 350);
+      }
+
+      /* ==================== UTILITÁRIOS ==================== */
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+      const esc = (s) =>
+        String(s == null ? "" : s).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      const student = () => state.student;
+      const displayName = () =>
+        state.student.name && state.student.name.trim()
+          ? state.student.name.trim()
+          : "—";
+
+      function levelFor(xp) {
+        let lvl = LEVELS[0];
+        for (const l of LEVELS) if (xp >= l.min) lvl = l;
+        return lvl;
+      }
+      function nextLevel(xp) {
+        for (const l of LEVELS) if (xp < l.min) return l;
+        return null;
+      }
+
+      function flashSave() {
+        let el = document.getElementById("saveIndicator");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "saveIndicator";
+          el.className = "save-indicator";
+          document.body.appendChild(el);
+        }
+        el.textContent = "✓ Salvo";
+        el.style.opacity = "1";
+        clearTimeout(el._t);
+        el._t = setTimeout(() => (el.style.opacity = "0"), 1500);
+      }
+
+      function showToast(msg) {
+        const t = document.createElement("div");
+        t.textContent = msg;
+        t.style.cssText =
+          "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1F4E79;color:#fff;padding:.8rem 1.4rem;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:999;font-weight:600;font-size:.9rem;animation:pop .3s";
+        document.body.appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = "0";
+          t.style.transition = "opacity .3s";
+          setTimeout(() => t.remove(), 350);
+        }, 2800);
+      }
+
+      function awardXP(amount) {
+        state.student.xp = (state.student.xp || 0) + amount;
+        save();
+      }
+
+      function giveBadge(id) {
+        if (!state.student.badges.includes(id)) {
+          state.student.badges.push(id);
+          save();
+          showToast("🏅 Medalha: " + BADGES[id].name);
+        }
+      }
+
+      function sanitizeCell(c) {
+        let s = String(c == null ? "" : c);
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+
+      function simpleHash(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) {
+          h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+        }
+        return Math.abs(h)
+          .toString(36)
+          .toUpperCase()
+          .padStart(6, "0")
+          .slice(-6);
+      }
+
+      /* ==================== REQUISITOS DE CONCLUSÃO ==================== */
+      function getRequirements(mod) {
+        const reqs = mod.requirements || [];
+        const hasQuiz = reqs.some((r) => r.id === "quiz");
+        if (!hasQuiz) {
+          return [
+            {
+              id: "quiz",
+              label: `Acerte todas as ${mod.quiz.length} questões do checkpoint`,
+              check: (u, m) =>
+                (u.answeredQs[m.id] || []).length === m.quiz.length,
+            },
+            ...reqs,
+          ];
+        }
+        return reqs;
+      }
+
+      function checkRequirements(mod) {
+        return getRequirements(mod).map((r) => ({
+          label: r.label,
+          done: r.check(state.student, mod),
+        }));
+      }
+
+      /* ==================== ROUTER (hash) ==================== */
+      function syncHash() {
+        const h =
+          state.view +
+          (state.view === "module" && Number.isInteger(state.currentModule)
+            ? "/" + state.currentModule
+            : "");
+        if (location.hash !== "#" + h) {
+          try {
+            history.replaceState(null, "", "#" + h);
+          } catch (e) {
+            location.hash = h;
+          }
+        }
+      }
+      window.addEventListener("hashchange", () => {
+        const parts = location.hash.replace(/^#\/?/, "").split("/");
+        const v = parts[0];
+        if (
+          [
+            "dashboard",
+            "map",
+            "lab",
+            "inventory",
+            "results",
+            "certificate",
+            "module",
+          ].includes(v)
+        ) {
+          if (v === "module" && !Number.isInteger(+parts[1])) return;
+          state.view = v;
+          if (v === "module") state.currentModule = +parts[1];
+          render();
+        }
+      });
+
+      /* ==================== RENDER ==================== */
+      function renderHeader() {
+        return `
+    <header class="topbar">
+      <div class="brand"><div class="logo">⚡</div><div>OPERAÇÃO AGV<small>Sinal sob controle</small></div></div>
+      <nav class="nav">
+        <button data-nav="dashboard" class="${state.view === "dashboard" ? "active" : ""}">🏠 Dashboard</button>
+        <button data-nav="map" class="${state.view === "map" || state.view === "module" ? "active" : ""}">🗺️ Mapa</button>
+        <button data-nav="lab" class="${state.view === "lab" ? "active" : ""}">🧪 Laboratório</button>
+        <button data-nav="inventory" class="${state.view === "inventory" ? "active" : ""}">🎒 Inventário</button>
+        <button data-nav="results" class="${state.view === "results" ? "active" : ""}">📊 Resultados</button>
+        ${state.student.completed.length === MODULES.length ? `<button data-nav="certificate" class="${state.view === "certificate" ? "active" : ""}">🏆 Certificado</button>` : ""}
+      </nav>
+    </header>`;
+      }
+
+      function renderDashboard() {
+        const u = student();
+        const lvl = levelFor(u.xp);
+        const next = nextLevel(u.xp);
+        const span = next ? next.min - lvl.min : 1;
+        const prog = next
+          ? Math.min(100, Math.round(((u.xp - lvl.min) / span) * 100))
+          : 100;
+        return `
+    <div class="hero">
+      <div>
+        <p style="opacity:.85;font-size:.85rem">Bem-vindo(a)</p>
+        <label for="studentName" class="sr-only">Seu nome</label>
+        <input class="name-input" id="studentName" placeholder="Digite seu nome" value="${esc(u.name)}" maxlength="60">
+        <p style="opacity:.9;margin-top:.5rem">${esc(lvl.name)}</p>
+        <div class="xpbar" aria-label="Barra de progresso de XP"><div style="width:${prog}%"></div></div>
+        <p style="opacity:.85;font-size:.82rem;margin-top:.4rem">${u.xp} XP ${next ? "· " + (next.min - u.xp) + " XP até " + next.name : "· nível máximo"}</p>
+      </div>
+      <div class="avatar-big">🎓</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="num">${u.completed.length}/${MODULES.length}</div><div class="lbl">Módulos concluídos</div></div>
+      <div class="stat"><div class="num">${u.badges.length}</div><div class="lbl">Medalhas</div></div>
+      <div class="stat"><div class="num">${u.measurements.length}</div><div class="lbl">Medições registradas</div></div>
+      <div class="stat"><div class="num">${Object.keys(u.quizScores).length}</div><div class="lbl">Checkpoints realizados</div></div>
+    </div>
+
+    ${
+      u.completed.length === MODULES.length
+        ? `
+      <div class="card" style="border:2px solid var(--success);background:#f1f8ec">
+        <h2 style="color:#4a7a2a;margin:0">🏆 Jornada completa!</h2>
+        <p style="margin:.5rem 0">Você concluiu todos os módulos. Emita seu certificado de conclusão.</p>
+        <button class="btn acc" data-nav="certificate">🏆 Ver certificado</button>
+      </div>
+    `
+        : ""
+    }
+
+    <div class="card">
+      <div class="card-hd"><h2 style="margin:0">Continuar missão</h2></div>
+      <p class="muted">Próximo módulo sugerido:</p>
+      ${nextModuleCard(u)}
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h2 style="margin:0">Conquistas</h2></div>
+      <div class="badge-grid">
+        ${Object.keys(BADGES)
+          .map((b) => {
+            const has = u.badges.includes(b);
+            return `<div class="badge ${has ? "" : "locked"}" title="${esc(BADGES[b].desc)} — ${has ? "conquistada" : "Como desbloquear: " + esc(BADGES[b].how)}">
+            <span class="ic">${BADGES[b].icon}</span>
+            <div class="nm">${BADGES[b].name}</div>
+            <div class="hw">${has ? "✓ conquistada" : esc(BADGES[b].how)}</div>
+          </div>`;
+          })
+          .join("")}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Configurações</h3>
+      <p class="muted" style="font-size:.85rem">Progresso salvo localmente neste navegador. Para recomeçar do zero (útil em laboratório com vários alunos), use o botão abaixo.</p>
+      <button class="btn ghost sm" id="resetBtn">🔄 Reiniciar jornada (apaga todo o progresso)</button>
+    </div>
+  `;
+      }
+
+      function nextModuleCard(u) {
+        const next = MODULES.find((m) => !u.completed.includes(m.id));
+        if (!next)
+          return `<div class="callout ok">🏁 Todos os módulos concluídos.</div>`;
+        return `
+    <div class="mod-card available" data-openmod="${next.id}" style="margin-top:.6rem">
+      <span class="num">MÓD ${next.id}</span>
+      <div class="icon">${next.icon}</div>
+      <div class="msep">${MSEP[next.msep]}</div>
+      <h4>${esc(next.title)}</h4>
+      <p>${esc(next.subtitle)}</p>
+      <span class="pill acc">${next.xp} XP</span>
+    </div>`;
+      }
+
+      function renderMap() {
+        const u = student();
+        return `
+    <div class="card">
+      <div class="card-hd">
+        <h2 style="margin:0">🗺️ Mapa da Operação</h2>
+        <span class="pill">${u.completed.length}/${MODULES.length} concluídos</span>
+      </div>
+      <p class="muted">Percorra os setores da instalação industrial seguindo as etapas da metodologia SENAI.</p>
+    </div>
+    <div class="map-grid">
+      ${MODULES.map((m, idx) => {
+        const done = u.completed.includes(m.id);
+        const prevDone = idx === 0 || u.completed.includes(MODULES[idx - 1].id);
+        const unlocked = prevDone || done;
+        let cls = "locked";
+        if (done) cls = "done";
+        else if (unlocked) cls = "available";
+        return `
+          <button class="mod-card ${cls}" ${unlocked ? `data-openmod="${m.id}"` : "disabled"}>
+            <span class="num">MÓD ${m.id}</span>
+            <div class="icon">${m.icon}</div>
+            <div class="msep">${MSEP[m.msep]}</div>
+            <h4>${esc(m.title)}</h4>
+            <p>${esc(m.subtitle)}</p>
+            <div class="tag-row">
+              <span class="pill">${m.xp} XP</span>
+              ${done ? '<span class="pill ok">Concluído</span>' : unlocked ? '<span class="pill acc">Disponível</span>' : '<span class="pill warn">Bloqueado</span>'}
+            </div>
+          </button>
+        `;
+      }).join("")}
+    </div>
+    ${
+      u.completed.length === MODULES.length
+        ? `
+      <div class="card" style="margin-top:1rem;text-align:center">
+        <button class="btn acc" data-nav="certificate">🏆 Ver certificado de conclusão</button>
+      </div>
+    `
+        : ""
+    }
+  `;
+      }
+
+      function renderModule(id) {
+        const m = MODULES.find((x) => x.id === id);
+        const u = student();
+        if (!m) return "<p>Módulo não encontrado.</p>";
+        const done = u.completed.includes(id);
+        const isLast = id === MODULES.length - 1;
+        return `
+    <div class="lesson">
+      <div style="margin-bottom:.6rem">
+        <span class="module-tag">MÓDULO ${m.id}</span>
+        <span class="msep-tag">${MSEP[m.msep]}</span>
+      </div>
+      ${m.content}
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h2 style="margin:0">🧠 Checkpoint — Módulo ${m.id}</h2>
+        <span class="pill ${done ? "ok" : "acc"}">${done ? "Concluído" : "Pendente"} · ${m.xp} XP</span>
+      </div>
+      <p class="muted">Responda as questões. O XP é concedido uma única vez por questão correta. Ao errar, você pode tentar novamente quantas vezes quiser.</p>
+      ${m.hint ? `<details style="margin:.5rem 0"><summary style="cursor:pointer;color:var(--accent-d);font-weight:600">💡 Ver dica conceitual</summary><div class="hint-box">${esc(m.hint)}</div></details>` : ""}
+      <div id="quizArea"></div>
+      <div id="reqArea"></div>
+      <div class="tp-nav">
+        <button class="btn ghost" data-nav="map">← Voltar ao mapa</button>
+        ${
+          done
+            ? `<button class="btn acc" data-nav="next-from-${id}">${isLast ? "🏆 Ver certificado" : "Avançar para o próximo módulo →"}</button>`
+            : `<button class="btn acc" id="finishMod">${isLast ? "Concluir e emitir certificado" : "Concluir e avançar →"}</button>`
+        }
+      </div>
+    </div>
+  `;
+      }
+
+      function renderLab() {
+        return `
+    <div class="card">
+      <h2>🧪 Laboratório Digital</h2>
+      <p class="muted">Simuladores didáticos conceituais. Não substituem instrumentos físicos.</p>
+    </div>
+    <div class="card">
+      <h3>⚖️ Simulador de Comparador</h3>
+      ${SVG.comparator()}
+      <div class="row">
+        <div class="field"><label for="labVin">Vin: <span class="val" id="labVinV">1,0</span> V</label><input type="range" id="labVin" min="0" max="5" step="0.1" value="1"></div>
+        <div class="field"><label for="labVref">Vref: <span class="val" id="labVrefV">2,0</span> V</label><input type="range" id="labVref" min="0" max="5" step="0.1" value="2"></div>
+      </div>
+      <div id="labCmpOut" class="formula" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <h3>📶 Gerador de Sinais</h3>
+      <div class="row">
+        <div class="field"><label for="labWave">Forma</label><select id="labWave"><option value="sine">Senoidal</option><option value="square" selected>Quadrada</option><option value="triangle">Triangular</option></select></div>
+        <div class="field"><label for="labFreq">Frequência: <span class="val" id="labFreqV">1000</span> Hz</label><input type="range" id="labFreq" min="100" max="5000" step="50" value="1000"></div>
+        <div class="field"><label for="labAmp">Amplitude: <span class="val" id="labAmpV">2,5</span> V</label><input type="range" id="labAmp" min="0.5" max="5" step="0.1" value="2.5"></div>
+        <div class="field"><label for="labDuty">Duty: <span class="val" id="labDutyV">50</span> %</label><input type="range" id="labDuty" min="10" max="90" step="5" value="50"></div>
+      </div>
+      <canvas id="labWaveCanvas" width="600" height="180" aria-label="Onda gerada no laboratório"></canvas>
+    </div>
+    <div class="card">
+      <h3>📊 Osciloscópio Didático</h3>
+      <div class="row">
+        <div class="field"><label for="labOsVd">V/div: <span class="val" id="labOsVdV">1,0</span></label><input type="range" id="labOsVd" min="0.5" max="2" step="0.5" value="1"></div>
+        <div class="field"><label for="labOsTd">Tempo/div (ms): <span class="val" id="labOsTdV">0,5</span></label><input type="range" id="labOsTd" min="0.1" max="1" step="0.1" value="0.5"></div>
+      </div>
+      <canvas id="labOsCanvas" width="600" height="200" aria-label="Tela de osciloscópio"></canvas>
+      <div id="labOsCalc" class="formula" aria-live="polite">—</div>
+    </div>
+    <div class="card">
+      <h3>📈 Comparador com Histerese</h3>
+      ${SVG.hysteresisCurve()}
+      <div class="row">
+        <div class="field"><label for="labTh">Limiar superior: <span class="val" id="labThV">2,5</span> V</label><input type="range" id="labTh" min="2.1" max="4.5" step="0.1" value="2.5"></div>
+        <div class="field"><label for="labTl">Limiar inferior: <span class="val" id="labTlV">1,5</span> V</label><input type="range" id="labTl" min="0.5" max="2.0" step="0.1" value="1.5"></div>
+      </div>
+      <canvas id="labHistCanvas" width="600" height="250" aria-label="Comparação de comutações com e sem histerese"></canvas>
+    </div>
+  `;
+      }
+
+      function renderInventory() {
+        const u = student();
+        return `
+    <div class="card">
+      <h2>🎒 Inventário</h2>
+      <p class="muted">Recompensas simbólicas e pedagógicas.</p>
+    </div>
+    <div class="card">
+      <h3>Medalhas</h3>
+      <div class="badge-grid">
+        ${Object.keys(BADGES)
+          .map((b) => {
+            const has = u.badges.includes(b);
+            return `<div class="badge ${has ? "" : "locked"}" title="${esc(BADGES[b].desc)} — ${has ? "conquistada" : "Como desbloquear: " + esc(BADGES[b].how)}">
+            <span class="ic">${BADGES[b].icon}</span>
+            <div class="nm">${BADGES[b].name}</div>
+            <div class="hw">${has ? "✓" : esc(BADGES[b].how)}</div>
+          </div>`;
+          })
+          .join("")}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Estatísticas</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${u.xp}</div><div class="lbl">XP acumulado</div></div>
+        <div class="stat"><div class="num">${levelFor(u.xp).name}</div><div class="lbl">Nível atual</div></div>
+        <div class="stat"><div class="num">${u.badges.length}</div><div class="lbl">Medalhas</div></div>
+      </div>
+    </div>
+  `;
+      }
+
+      function renderResults() {
+        const u = student();
+        const scores = u.quizScores || {};
+        return `
+    <div class="card">
+      <h2>📊 Meus resultados</h2>
+      <p class="muted">Desempenho nos checkpoints. XP não substitui a avaliação por competências.</p>
+    </div>
+    <div class="card">
+      <h3>Checkpoints</h3>
+      <table class="table">
+        <tr><th>Módulo</th><th>Acertos</th><th>Tentativas</th><th>Status</th></tr>
+        ${MODULES.map((m) => {
+          const s = scores[m.id];
+          const done = u.completed.includes(m.id);
+          return `<tr>
+            <td>${m.id} · ${esc(m.title)}</td>
+            <td>${s ? s.best + "/" + s.total : "—"}</td>
+            <td>${s ? s.attempts : 0}</td>
+            <td>${done ? '<span class="pill ok">Concluído</span>' : '<span class="pill warn">Pendente</span>'}</td>
+          </tr>`;
+        }).join("")}
+      </table>
+    </div>
+    <div class="card">
+      <h3>Medições registradas</h3>
+      ${
+        u.measurements.length
+          ? `
+        <table class="table">
+          <tr><th>Ponto</th><th>Grandeza</th><th>Valor</th><th>Condição</th><th>Esperado</th></tr>
+          ${u.measurements.map((m) => `<tr><td>${esc(m.tp)}</td><td>${esc(m.qty)}</td><td>${esc(m.val)} ${esc(m.unit)}</td><td>${esc(m.cond || "—")}</td><td>${esc(m.exp || "—")}</td></tr>`).join("")}
+        </table>
+      `
+          : '<p class="empty">Nenhuma medição registrada ainda.</p>'
+      }
+    </div>
+  `;
+      }
+
+      function certNameClass(n) {
+        return n.length > 46 ? "sm" : n.length > 30 ? "md" : "";
+      }
+      function applyCertName() {
+        const el = $("#certNameOut");
+        if (!el) return;
+        const n = displayName();
+        el.textContent = n;
+        el.className = "cert-name " + certNameClass(n);
+      }
+
+      function renderCertificate() {
+        const u = student();
+        if (u.completed.length !== MODULES.length) {
+          return `
+      <div class="card">
+        <h2>🏆 Certificado</h2>
+        <p>O certificado será emitido após a conclusão de todos os módulos.</p>
+        <p class="muted">Progresso atual: ${u.completed.length}/${MODULES.length} módulos concluídos.</p>
+        <button class="btn ghost" data-nav="map">← Voltar ao mapa</button>
+      </div>`;
+        }
+        if (!u.certificateDate) {
+          u.certificateDate = new Date().toISOString();
+          save();
+        }
+        const d = new Date(u.certificateDate);
+        const dateStr = d.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
+        const certId =
+          "AGV-" +
+          d.getFullYear() +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          String(d.getDate()).padStart(2, "0") +
+          "-" +
+          simpleHash(displayName() + u.certificateDate);
+        const totalScore = Object.values(u.answeredQs || {}).reduce(
+          (acc, a) => acc + a.length,
+          0,
+        );
+        const totalQs = MODULES.reduce((acc, m) => acc + m.quiz.length, 0);
+        const lvl = levelFor(u.xp);
+        const nm = displayName();
+        const capacities = [];
+        if (u.completed.includes(1))
+          capacities.push("leitura de datasheet e pinagem");
+        if (u.completed.includes(3))
+          capacities.push("análise de condicionamento de sinais");
+        if (u.completed.includes(5))
+          capacities.push("operação de instrumentos de medição");
+        if (u.completed.includes(6)) capacities.push("diagnóstico de falhas");
+        if (u.completed.includes(7)) capacities.push("documentação técnica");
+        if (u.safetyOk) capacities.push("procedimentos de segurança");
+        const capStr = capacities.length
+          ? capacities.join(" · ")
+          : "jornada completa";
+        return `
+    <div class="cert-toolbar no-print">
+      <div class="name-set">
+        <label for="certName" style="font-weight:600">Nome no certificado:</label>
+        <input type="text" id="certName" value="${esc(u.name)}" placeholder="Digite seu nome completo" maxlength="60">
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <button class="btn ghost" data-nav="dashboard">← Voltar</button>
+        <button class="btn acc" id="printCert">🖨️ Imprimir / Salvar PDF</button>
+      </div>
+      <div class="print-warning">⚠️ A impressão sai em <strong>A4 paisagem</strong>, com margens em "Nenhuma". O nome em branco impede a emissão.</div>
+    </div>
+
+    <div class="cert-wrap">
+      <div class="cert">
+        <div class="cert-frame">
+          <div class="cert-corner tl"></div><div class="cert-corner tr"></div>
+          <div class="cert-corner bl"></div><div class="cert-corner br"></div>
+
+          <div>
+            <div class="cert-logo">SENAI</div>
+            <div class="cert-title">CERTIFICADO</div>
+            <div class="cert-subtitle">DE CONCLUSÃO DE ATIVIDADE</div>
+          </div>
+
+          <div class="cert-body">
+            <div class="lbl">Certificamos que</div>
+            <div id="certNameOut" class="cert-name ${certNameClass(nm)}">${esc(nm)}</div>
+            <div class="lbl">concluiu com êxito a atividade gamificada</div>
+            <div class="cert-course">OPERAÇÃO AGV — SINAL SOB CONTROLE</div>
+            <div class="cert-detail"><strong>Amplificadores Operacionais e Osciladores aplicados ao AGV</strong></div>
+            <div class="cert-detail">Curso: Técnico em Mecatrônica — 2º ano do Ensino Médio Técnico</div>
+            <div class="cert-detail">Unidade Curricular: Sistemas Eletrônicos · Encontro 06 — Projeto Integrador AGV</div>
+            <div class="cert-detail" style="margin-top:.9cqw">
+              <strong>Desempenho:</strong> ${u.completed.length}/${MODULES.length} módulos concluídos · ${u.xp} XP · Nível “${esc(lvl.name)}” · ${u.badges.length} medalhas
+            </div>
+            <div class="cert-detail">${totalScore}/${totalQs} questões corretas nos checkpoints</div>
+            <div class="cert-caps">Capacidades evidenciadas: ${esc(capStr)}</div>
+          </div>
+
+          <div class="cert-sig-row">
+            <div class="cert-sig"><div class="line"></div><div class="name">Prof. Rútilo Hahn</div><div class="role">Instrutor responsável</div></div>
+            <div class="cert-sig"><div class="line"></div><div class="name">Coordenação SENAI</div><div class="role">Coordenação de Educação Profissional</div></div>
+          </div>
+
+          <div class="cert-foot">
+            <div class="cert-seal">SENAI · Educação Profissional</div>
+            <div class="cert-meta">Emitido em <strong>${dateStr}</strong><br><span class="cert-id">${certId}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card no-print" style="margin-top:1rem">
+      <h3>Como salvar seu certificado</h3>
+      <ol>
+        <li>Clique em <strong>Imprimir / Salvar PDF</strong>.</li>
+        <li>No diálogo, escolha “Salvar como PDF” e confirme que o papel é <strong>A4 paisagem</strong> (já vem definido) e as margens estão em “Nenhuma”.</li>
+        <li>Salve o arquivo com seu nome.</li>
+      </ol>
+    </div>
+  `;
+      }
+
+      function render() {
+        const root = $("#root");
+        let body = "";
+        const view = state.view || "dashboard";
+        switch (view) {
+          case "dashboard":
+            body = renderDashboard();
+            break;
+          case "map":
+            body = renderMap();
+            break;
+          case "module":
+            body = renderModule(state.currentModule);
+            break;
+          case "lab":
+            body = renderLab();
+            break;
+          case "inventory":
+            body = renderInventory();
+            break;
+          case "results":
+            body = renderResults();
+            break;
+          case "certificate":
+            body = renderCertificate();
+            break;
+          default:
+            body = renderDashboard();
+        }
+        root.innerHTML = renderHeader() + `<main class="main">${body}</main>`;
+        bindGlobal();
+        bindView();
+        syncHash();
+        window.scrollTo(0, 0);
+      }
+
+      /* ==================== BINDINGS ==================== */
+      function bindGlobal() {
+        $$("[data-nav]").forEach((el) => {
+          el.onclick = () => {
+            const v = el.dataset.nav;
+            if (v.startsWith("next-from-")) {
+              const cur = +v.replace("next-from-", "");
+              const next = cur + 1;
+              if (next < MODULES.length) {
+                state.currentModule = next;
+                state.view = "module";
+              } else {
+                state.view = "certificate";
+              }
+            } else {
+              state.view = v;
+            }
+            save();
+            render();
+          };
+        });
+        $$("[data-openmod]").forEach((el) => {
+          el.onclick = () => {
+            state.currentModule = +el.dataset.openmod;
+            state.view = "module";
+            save();
+            render();
+          };
+        });
+        const nameIn = $("#studentName");
+        if (nameIn)
+          nameIn.oninput = () => {
+            state.student.name = nameIn.value;
+            save();
+          };
+        const certName = $("#certName");
+        if (certName)
+          certName.oninput = () => {
+            state.student.name = certName.value;
+            save();
+            applyCertName();
+          };
+        const printBtn = $("#printCert");
+        if (printBtn)
+          printBtn.onclick = () => {
+            if (!state.student.name.trim()) {
+              showToast("Digite seu nome para emitir o certificado.");
+              if (certName) certName.focus();
+              return;
+            }
+            window.print();
+          };
+        const resetBtn = $("#resetBtn");
+        if (resetBtn)
+          resetBtn.onclick = () => {
+            if (
+              !confirm(
+                "Isso apagará TODO o progresso (XP, medalhas, módulos concluídos, medições, dossiê, reflexões). Deseja continuar?",
+              )
+            )
+              return;
+            localStorage.removeItem(STORAGE_KEY);
+            state = getInitialState();
+            state.view = "dashboard";
+            save();
+            render();
+            showToast("Jornada reiniciada");
+          };
+      }
+
+      function bindView() {
+        if (state.view === "module") {
+          const setup = SETUP_FNS[state.currentModule];
+          if (setup) setup();
+          renderQuiz(state.currentModule);
+          updateCompletionUI(state.currentModule);
+          const finishBtn = $("#finishMod");
+          if (finishBtn) {
+            finishBtn.onclick = () => {
+              const cur = state.currentModule;
+              const u = student();
+              const mod = MODULES[cur];
+              const reqs = checkRequirements(mod);
+              const unmet = reqs.filter((r) => !r.done);
+              if (unmet.length) {
+                showToast("Falta: " + unmet.map((r) => r.label).join(" · "));
+                return;
+              }
+              if (!u.completed.includes(cur)) {
+                u.completed.push(cur);
+                const BM = {
+                  0: "primeira_missao",
+                  1: "mestre_terminais",
+                  2: "leitor_datasheets",
+                  3: "cacador_ruidos",
+                };
+                if (BM[cur]) giveBadge(BM[cur]);
+                awardXP(mod.xp);
+                if (cur === MODULES.length - 1) {
+                  giveBadge("engenheiro_integrador");
+                  u.certificateDate =
+                    u.certificateDate || new Date().toISOString();
+                }
+                save();
+              }
+              const next = cur + 1;
+              if (next < MODULES.length) {
+                state.currentModule = next;
+                state.view = "module";
+              } else {
+                state.view = "certificate";
+              }
+              save();
+              render();
+            };
+          }
+        }
+        if (state.view === "lab") setupLab();
+      }
+
+      function updateCompletionUI(moduleId) {
+        const mod = MODULES[moduleId];
+        if (!mod) return;
+        const reqs = checkRequirements(mod);
+        const allDone = reqs.every((r) => r.done);
+        const area = $("#reqArea");
+        if (area) {
+          area.innerHTML = `
+      <div class="req-list">
+        <div style="font-weight:600;color:var(--primary-d);font-size:.9rem;margin-bottom:.4rem">Para concluir este módulo:</div>
+        ${reqs
+          .map(
+            (r) => `
+          <div class="req-item ${r.done ? "ok" : ""}">
+            <span class="req-ic" aria-hidden="true">${r.done ? "✓" : "○"}</span>
+            <span>${esc(r.label)}</span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+        }
+        const btn = $("#finishMod");
+        if (btn) {
+          btn.disabled = !allDone;
+          btn.style.opacity = allDone ? "1" : ".55";
+          btn.style.cursor = allDone ? "pointer" : "not-allowed";
+          btn.title = allDone
+            ? ""
+            : "Complete todos os requisitos para avançar";
+        }
+      }
+
+      /* ==================== QUIZ ==================== */
+      function renderQuiz(moduleId) {
+        const m = MODULES.find((x) => x.id === moduleId);
+        const u = student();
+        const container = $("#quizArea");
+        if (!container) return;
+
+        let sessionStarted = false;
+        const prevScore = u.quizScores[moduleId] || {
+          best: 0,
+          total: m.quiz.length,
+          attempts: 0,
+        };
+        const cumSolved = (u.answeredQs[moduleId] || []).length;
+
+        container.innerHTML =
+          m.quiz
+            .map((q, i) => {
+              const alreadyCorrect = (u.answeredQs[moduleId] || []).includes(i);
+              return `
+      <fieldset class="quiz-q" data-q="${i}">
+        <legend class="qtext">${i + 1}. ${esc(q.q)}</legend>
+        <div role="radiogroup" aria-labelledby="q${i}-lbl">
+          <span id="q${i}-lbl" class="sr-only">Pergunta ${i + 1}: ${esc(q.q)}</span>
+          ${q.options
+            .map((o, j) => {
+              const isCorrect = j === q.correct;
+              const cls = alreadyCorrect && isCorrect ? "correct" : "";
+              return `<button class="quiz-opt ${cls}" data-qidx="${i}" data-oidx="${j}" ${alreadyCorrect ? 'disabled aria-disabled="true"' : ""}>${esc(o)}</button>`;
+            })
+            .join("")}
+        </div>
+        ${alreadyCorrect ? `<div class="fb ok">✓ Já respondida corretamente em sessão anterior.</div>` : `<div class="fb" hidden></div>`}
+      </fieldset>`;
+            })
+            .join("") +
+          `
+    <div class="callout info" style="margin-top:.8rem">
+      <strong>Progresso do checkpoint:</strong> <span id="qProg" aria-live="polite">${cumSolved}</span>/${m.quiz.length} corretas<br>
+      <span class="muted" style="font-size:.85rem">Melhor resultado anterior: ${prevScore.best}/${prevScore.total}</span>
+    </div>`;
+
+        container
+          .querySelectorAll(".quiz-opt:not([disabled])")
+          .forEach((btn) => {
+            btn.onclick = () => {
+              const qi = +btn.dataset.qidx,
+                oi = +btn.dataset.oidx;
+              const q = m.quiz[qi];
+              const wrap = btn.closest(".quiz-q");
+              if (wrap.dataset.solved === "1") return;
+
+              if (!sessionStarted) {
+                sessionStarted = true;
+                const cur = u.quizScores[moduleId] || {
+                  best: cumSolved,
+                  total: m.quiz.length,
+                  attempts: 0,
+                };
+                cur.attempts = (cur.attempts || 0) + 1;
+                cur.total = m.quiz.length;
+                u.quizScores[moduleId] = cur;
+              }
+
+              const ok = oi === q.correct;
+              const fb = wrap.querySelector(".fb");
+              fb.hidden = false;
+
+              if (ok) {
+                wrap.dataset.solved = "1";
+                wrap.querySelectorAll(".quiz-opt").forEach((b, idx) => {
+                  b.disabled = true;
+                  if (idx === q.correct) b.classList.add("correct");
+                });
+                fb.className = "fb ok";
+
+                const wasNew = !(u.answeredQs[moduleId] || []).includes(qi);
+                u.answeredQs[moduleId] = u.answeredQs[moduleId] || [];
+                if (wasNew) {
+                  u.answeredQs[moduleId].push(qi);
+                  awardXP(XP_PER_CORRECT);
+                }
+                const cur = u.quizScores[moduleId];
+                cur.best = u.answeredQs[moduleId].length;
+                u.quizScores[moduleId] = cur;
+
+                fb.innerHTML =
+                  "✓ " +
+                  esc(q.feedback.correct) +
+                  (wasNew
+                    ? ' <span class="xp-gain">+' + XP_PER_CORRECT + " XP</span>"
+                    : "");
+                $("#qProg").textContent = u.answeredQs[moduleId].length;
+
+                const BM = {
+                  1: "mestre_terminais",
+                  2: "leitor_datasheets",
+                  3: "cacador_ruidos",
+                };
+                if (
+                  BM[moduleId] &&
+                  u.answeredQs[moduleId].length === m.quiz.length
+                )
+                  giveBadge(BM[moduleId]);
+                if (
+                  u.answeredQs[moduleId].length === m.quiz.length &&
+                  u.completed.length === 0 &&
+                  moduleId === 0
+                )
+                  giveBadge("primeira_missao");
+                save();
+                updateCompletionUI(moduleId);
+              } else {
+                btn.disabled = true;
+                btn.classList.add("wrong");
+                fb.className = "fb no";
+                fb.innerHTML =
+                  "✗ " +
+                  esc(q.feedback.wrong) +
+                  ' <button class="btn sm" data-retry="' +
+                  qi +
+                  '" style="margin-left:.5rem">Tentar novamente</button>';
+                fb.querySelector("[data-retry]").onclick = () => {
+                  wrap.querySelectorAll(".quiz-opt").forEach((b) => {
+                    b.disabled = false;
+                    b.classList.remove("wrong", "correct");
+                  });
+                  fb.hidden = true;
+                  fb.className = "fb";
+                  fb.innerHTML = "";
+                };
+                save();
+              }
+            };
+          });
+      }
+
+      /* ==================== SETUP POR MÓDULO ==================== */
+      const SETUP_FNS = {};
+
+      SETUP_FNS[0] = function setupModule0() {
+        const u = student();
+        $$("#ia-pre textarea").forEach((t) => {
+          if (u.reflections[t.id]) t.value = u.reflections[t.id];
+          t.oninput = () => {
+            u.reflections[t.id] = t.value;
+            save();
+          };
+        });
+        const savePre = $("#savePre");
+        if (savePre)
+          savePre.onclick = () => {
+            $$("#ia-pre textarea").forEach(
+              (t) => (u.reflections[t.id] = t.value),
+            );
+            save();
+            $("#preStatus").textContent = "✓ reflexão salva";
+            flashSave();
+          };
+      };
+
+      SETUP_FNS[1] = function setupModule1() {
+        const info = {
+          "vin+":
+            "V+ (não inversora): recebe o sinal que será amplificado. Mantém a mesma fase do sinal de saída.",
+          "vin-":
+            "V− (inversora): recebe o sinal invertido. A saída terá fase oposta.",
+          vout: "Vout (saída): tensão amplificada. Pode saturar perto dos trilhos de alimentação.",
+          "vcc+": "Vcc+ (alimentação positiva): normalmente +5 V ou +12 V.",
+          "vcc-": "Vcc− ou GND: referência de alimentação.",
+          offset:
+            "Pinos de offset: usados para nular tensões de offset internas. No LM358 não há esses pinos.",
+        };
+        $$("[data-term]").forEach((b) => {
+          b.onclick = () => {
+            $("#termInfo").textContent = info[b.dataset.term] || "";
+          };
+        });
+        const update = () => {
+          const cfg = $("#gainCfg").value;
+          const R1 = parseFloat($("#gainR1").value) || 1;
+          const R2 = parseFloat($("#gainR2").value) || 0;
+          const Vin = parseFloat($("#gainVin").value) || 0;
+          let gain = 1,
+            f = "";
+          if (cfg === "buf") {
+            gain = 1;
+            f = "Vout = Vin";
+          } else if (cfg === "inv") {
+            gain = -R2 / R1;
+            f = "Vout = −(R2/R1)·Vin";
+          } else {
+            gain = 1 + R2 / R1;
+            f = "Vout = (1 + R2/R1)·Vin";
+          }
+          let vout = gain * Vin,
+            warn = "";
+          if (vout > 3.5) {
+            vout = 3.5;
+            warn =
+              '<br><strong style="color:#C00000">⚠ Saturação: com 5 V o LM358 chega a ≈ 3,5 V.</strong>';
+          } else if (vout < 0) {
+            vout = 0;
+            warn =
+              '<br><strong style="color:#C00000">⚠ Alimentação simples: a saída não fica abaixo de ≈ 0 V.</strong>';
+          }
+          $("#gainOut").innerHTML =
+            `${f}<br>Ganho = <strong>${gain.toFixed(2)}</strong> · Vout = <strong>${vout.toFixed(2)} V</strong><br><span class="muted" style="font-size:.8rem">Modelo idealizado, alimentação simples de 5 V.</span>${warn}`;
+        };
+        ["#gainCfg", "#gainR1", "#gainR2", "#gainVin"].forEach((s) => {
+          const el = $(s);
+          if (el) el.oninput = update;
+        });
+        update();
+      };
+
+      SETUP_FNS[2] = function setupModule2() {
+        // Datasheet viewer
+        const dsContent = {
+          pin: `<h4>Pinagem (Pin Configuration)</h4><p>O datasheet do LM358 mostra a pinagem do DIP-8:</p><table class="table"><tr><th>Pino</th><th>Função</th></tr><tr><td>1</td><td>Saída 1</td></tr><tr><td>2</td><td>IN− 1</td></tr><tr><td>3</td><td>IN+ 1</td></tr><tr><td>4</td><td>GND</td></tr><tr><td>5</td><td>IN+ 2</td></tr><tr><td>6</td><td>IN− 2</td></tr><tr><td>7</td><td>Saída 2</td></tr><tr><td>8</td><td>Vcc+</td></tr></table>`,
+          vcc: `<h4>Tensão de alimentação (Supply Voltage)</h4><p>O LM358 opera em alimentação simples ou dual. A faixa típica é de 3 V a 32 V (consulte a versão exata do componente). Em alimentação de 5 V, a saída NÃO chega aos 5 V — a saturação alta fica em torno de Vcc − 1,5 V.</p><div class="callout info">A tensão de alimentação define o headroom: espaço entre a saída real e os trilhos.</div>`,
+          out: `<h4>Corrente de saída (Output Current)</h4><p>A corrente máxima de saída é limitada (tipicamente dezenas de mA). Isso é suficiente para a entrada do controlador do AGV, que consome muito pouco.</p><div class="callout warn"><strong>Atenção:</strong> não conecte cargas de potência diretamente na saída do AmpOp.</div>`,
+          sig: `<h4>Slew rate e GBW</h4><p><strong>Slew rate:</strong> taxa máxima de variação da saída em V/μs. Limita sinais rápidos.<br><strong>Gain-Bandwidth Product (GBW):</strong> produto ganho × banda. Se você ganha 10×, a banda cai 10×.</p><div class="callout">Para validar o condicionador, o gerador de 1 kHz é o suficiente — mas escolha o AmpOp com GBW maior que o necessário.</div>`,
+        };
+        $$(".ds-tabs button").forEach((b) => {
+          b.onclick = () => {
+            $$(".ds-tabs button").forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            const body = $("#dsBody");
+            if (body) body.innerHTML = dsContent[b.dataset.ds] || "";
+          };
+        });
+        const dsBody = $("#dsBody");
+        if (dsBody) dsBody.innerHTML = dsContent.pin;
+
+        // 555 calculator
+        const upd555 = () => {
+          const R1 = (parseFloat($("#t555R1").value) || 0.001) * 1000;
+          const R2 = (parseFloat($("#t555R2").value) || 0.001) * 1000;
+          const C = (parseFloat($("#t555C").value) || 0.001) * 1e-9;
+          const f = 1.44 / ((R1 + 2 * R2) * C);
+          const out = $("#t555Out");
+          if (!out) return;
+          let disp =
+            f >= 1e3 ? (f / 1e3).toFixed(2) + " kHz" : f.toFixed(0) + " Hz";
+          out.innerHTML = `f ≈ ${disp}<br><span class="muted" style="font-size:.82rem">Verifique no datasheet da versão do 555 utilizada.</span>`;
+        };
+        ["#t555R1", "#t555R2", "#t555C"].forEach((s) => {
+          const el = $(s);
+          if (el) el.oninput = upd555;
+        });
+        upd555();
+
+        setupGenerator(
+          "#genWave",
+          "#genFreq",
+          "#genAmp",
+          "#genDuty",
+          "#genFreqV",
+          "#genAmpV",
+          "#genDutyV",
+          "#genCanvas",
+        );
+      };
+
+      SETUP_FNS[3] = function setupModule3() {
+        setupComparator(
+          "#cmpVin",
+          "#cmpVref",
+          "#cmpVinV",
+          "#cmpVrefV",
+          "#cmpOut",
+        );
+        setupHysteresis("#hTh", "#hTl", "#hThV", "#hTlV", "#histCanvas");
+        setupFilter("#fR", "#fC", "#fOut");
+      };
+
+      SETUP_FNS[4] = function setupModule4() {
+        const u = student();
+        const scenarios = [
+          {
+            id: "ci-inv",
+            desc: "O CI foi inserido na protoboard com o pino 1 na posição do pino 8 (invertido). Após energizar, o CI aquece e a saída não responde.",
+            options: [
+              "CI invertido",
+              "Alimentação invertida",
+              "Jumper solto",
+              "Falta de decoupling",
+            ],
+            correct: 0,
+            feedback:
+              "CI invertido inverte a alimentação. Isso danifica o componente ou faz ele aquecer imediatamente.",
+          },
+          {
+            id: "alim-inv",
+            desc: "A fonte foi ligada com Vcc (vermelho) no pino 4 (GND) e GND (preto) no pino 8 (Vcc+). O CI aquece rapidamente.",
+            options: [
+              "CI invertido",
+              "Alimentação invertida",
+              "Jumper solto",
+              "Falta de decoupling",
+            ],
+            correct: 1,
+            feedback:
+              "Alimentação invertida é uma das principais causas de superaquecimento imediato do CI.",
+          },
+          {
+            id: "jumper",
+            desc: "O sinal de entrada chega ao pino 3, mas o jumper que liga o pino 2 ao terra está solto. A saída fica em estado indefinido.",
+            options: [
+              "CI invertido",
+              "Alimentação invertida",
+              "Jumper solto",
+              "Falta de decoupling",
+            ],
+            correct: 2,
+            feedback:
+              "Jumper solto: a entrada inversora não tem referência, e a saída fica flutuando.",
+          },
+          {
+            id: "curto",
+            desc: "Dois jumpers encostam na linha de Vcc e na linha de GND por descuido. A fonte entra em limitação de corrente.",
+            options: [
+              "CI invertido",
+              "Curto entre linhas",
+              "Jumper solto",
+              "Falta de decoupling",
+            ],
+            correct: 1,
+            feedback:
+              "Curto entre Vcc e GND força a fonte a limitar a corrente. Sempre confira os jumpers.",
+          },
+          {
+            id: "gnd",
+            desc: "O sensor está em uma placa separada. A alimentação chega ao AmpOp, mas o GND do sensor não está ligado ao GND do AmpOp. O sinal lido é errático.",
+            options: [
+              "CI invertido",
+              "Alimentação invertida",
+              "Ausência de GND comum",
+              "Falta de decoupling",
+            ],
+            correct: 2,
+            feedback:
+              "Sem GND comum, as tensões de referência não são compartilhadas — todo o condicionamento falha.",
+          },
+        ];
+        const wrap = $("#erroList");
+        if (wrap) {
+          wrap.innerHTML = scenarios
+            .map(
+              (s, idx) => `
+      <div class="ia" style="margin:0" data-scen="${idx}">
+        <div style="font-size:.9rem;margin-bottom:.5rem"><strong>Cenário ${idx + 1}.</strong> ${esc(s.desc)}</div>
+        <div role="radiogroup" aria-label="Causa do cenário ${idx + 1}" style="display:grid;gap:.3rem">
+          ${s.options.map((o, j) => `<button class="quiz-opt" data-scen="${idx}" data-opt="${j}">${esc(o)}</button>`).join("")}
+        </div>
+        <div class="fb" hidden></div>
+      </div>
+    `,
+            )
+            .join("");
+          wrap.querySelectorAll("[data-opt]").forEach((b) => {
+            b.onclick = () => {
+              const sIdx = +b.dataset.scen;
+              const oIdx = +b.dataset.opt;
+              const s = scenarios[sIdx];
+              const sc = b.closest("[data-scen]");
+              if (sc.dataset.solved === "1") return;
+              const fb = sc.querySelector(".fb");
+              fb.hidden = false;
+              const ok = oIdx === s.correct;
+              if (ok) {
+                sc.dataset.solved = "1";
+                sc.querySelectorAll("[data-opt]").forEach((x, j) => {
+                  x.disabled = true;
+                  if (j === s.correct) x.classList.add("correct");
+                });
+                fb.className = "fb ok";
+                fb.textContent = "✓ " + s.feedback;
+              } else {
+                b.disabled = true;
+                b.classList.add("wrong");
+                fb.className = "fb no";
+                fb.innerHTML =
+                  "✗ Não é essa. " +
+                  '<button class="btn sm" data-retry-scen="' +
+                  sIdx +
+                  '" style="margin-left:.5rem">Tentar novamente</button>';
+                const retry = fb.querySelector("[data-retry-scen]");
+                if (retry)
+                  retry.onclick = () => {
+                    sc.querySelectorAll("[data-opt]").forEach((x) => {
+                      x.disabled = false;
+                      x.classList.remove("wrong", "correct");
+                    });
+                    fb.hidden = true;
+                    fb.className = "fb";
+                    fb.textContent = "";
+                  };
+              }
+              save();
+            };
+          });
+        }
+        // Safety checklist
+        $$("[data-safety]").forEach((chk) => {
+          chk.checked = u.safetyChecks
+            ? !!u.safetyChecks[chk.dataset.safety]
+            : false;
+          chk.onchange = () => {
+            u.safetyChecks = u.safetyChecks || {};
+            u.safetyChecks[chk.dataset.safety] = chk.checked;
+            save();
+          };
+        });
+        const sd = $("#safetyDone");
+        if (sd)
+          sd.onclick = () => {
+            const all = $$("[data-safety]").every((c) => c.checked);
+            if (all) {
+              u.safetyOk = true;
+              giveBadge("guardiao_seguranca");
+              $("#safetyStatus").textContent = "✓ inspeção registrada.";
+              save();
+              updateCompletionUI(4);
+            } else {
+              $("#safetyStatus").textContent = "⚠ preencha todos os itens";
+            }
+          };
+      };
+
+      SETUP_FNS[5] = function setupModule5() {
+        setupOscilloscope(
+          "#osVd",
+          "#osTd",
+          "#osVdV",
+          "#osTdV",
+          "#osCanvas",
+          "#osCalc",
+        );
+      };
+
+      SETUP_FNS[6] = function setupModule6() {
+        const u = student();
+        const out = $("#dgOut"),
+          btn = $("#dgBtn");
+        const ANALYSIS =
+          "<strong>Análise:</strong> a Vref medida (0,5 V) está muito abaixo da esperada (2,0 V). Como Vin (1,0 V) é maior que 0,5 V, o comparador está certo ao saturar em ALTO: o defeito está no divisor de Vref. Com Vref = Vcc × R2/(R1+R2), 0,5 V exige R2/(R1+R2) = 0,1, ou seja R2 ≈ 1,1 kΩ (com R1 = 10 kΩ) em vez de ≈ 6,8 kΩ — <strong>resistor incorreto</strong>. Correção: com o circuito desenergizado, conferir as faixas de cor e trocar o resistor. Reteste: Vref ≈ 2,0 V e saída BAIXA com o sensor sobre o piso escuro.";
+        ["dg1", "dg2", "dg3"].forEach((id) => {
+          const el = $("#" + id);
+          if (!el) return;
+          el.value = u.reflections[id] || "";
+          el.oninput = () => {
+            u.reflections[id] = el.value;
+            save();
+          };
+        });
+        const show = () => {
+          out.hidden = false;
+          out.style.display = "block";
+          out.className = "fb ok";
+          out.innerHTML = ANALYSIS;
+        };
+        if (u.reflections.dg_revealed) show();
+        if (btn)
+          btn.onclick = () => {
+            if (!$("#dg2").value.trim()) {
+              out.hidden = false;
+              out.style.display = "block";
+              out.className = "fb no";
+              out.textContent =
+                "Antes de revelar, registre sua hipótese no campo 2.";
+              return;
+            }
+            u.reflections.dg_revealed = true;
+            save();
+            show();
+            giveBadge("detetive_falhas");
+            updateCompletionUI(6);
+          };
+      };
+
+      SETUP_FNS[7] = function setupModule7() {
+        const u = student();
+        renderMeasurements();
+        const mAdd = $("#mAdd");
+        if (mAdd)
+          mAdd.onclick = () => {
+            const tp = $("#mTP").value.trim(),
+              val = $("#mVal").value.trim();
+            if (!tp || !val) {
+              showToast("Preencha ponto de teste e valor medido.");
+              return;
+            }
+            u.measurements.push({
+              id: Date.now(),
+              tp,
+              qty: $("#mQty").value,
+              val,
+              unit: $("#mUnit").value,
+              cond: $("#mCond").value,
+              instr: $("#mInstr").value,
+              exp: $("#mExp").value,
+              obs: $("#mObs").value,
+            });
+            ["#mTP", "#mVal", "#mCond", "#mInstr", "#mExp", "#mObs"].forEach(
+              (s) => {
+                const el = $(s);
+                if (el) el.value = "";
+              },
+            );
+            giveBadge("mestre_medicoes");
+            save();
+            renderMeasurements();
+            updateCompletionUI(7);
+          };
+        const mExp = $("#mExport");
+        if (mExp)
+          mExp.onclick = () => {
+            const rows = [
+              [
+                "Ponto",
+                "Grandeza",
+                "Valor",
+                "Unidade",
+                "Condição",
+                "Instrumento",
+                "Esperado",
+                "Observação",
+              ],
+            ];
+            u.measurements.forEach((m) =>
+              rows.push([
+                m.tp,
+                m.qty,
+                m.val,
+                m.unit,
+                m.cond,
+                m.instr,
+                m.exp,
+                m.obs,
+              ]),
+            );
+            downloadCSV(rows, "medicoes.csv");
+          };
+        const d = u.dossier || {};
+        const DK = {
+          dEq: "equipe",
+          dInt: "integrantes",
+          dVmin: "vin_min",
+          dVmax: "vin_max",
+          dVref: "vref",
+          dVoLow: "vout_baixo",
+          dVoHi: "vout_alto",
+          dFalha: "falha",
+          dCorr: "correcao",
+          dEvid: "evidencia",
+          dRec: "recomendacao",
+        };
+        Object.keys(DK).forEach((id) => {
+          const el = $("#" + id);
+          if (el) el.value = d[DK[id]] || "";
+        });
+        const ds = $("#dSave");
+        if (ds)
+          ds.onclick = () => {
+            u.dossier = {
+              equipe: $("#dEq").value,
+              integrantes: $("#dInt").value,
+              vin_min: $("#dVmin").value,
+              vin_max: $("#dVmax").value,
+              vref: $("#dVref").value,
+              vout_baixo: $("#dVoLow").value,
+              vout_alto: $("#dVoHi").value,
+              falha: $("#dFalha").value,
+              correcao: $("#dCorr").value,
+              evidencia: $("#dEvid").value,
+              recomendacao: $("#dRec").value,
+            };
+            giveBadge("engenheiro_integrador");
+            if (u.dossier.equipe.trim() && u.dossier.integrantes.trim())
+              giveBadge("trabalho_equipe");
+            save();
+            $("#dStatus").textContent = "✓ dossiê salvo";
+          };
+        const de = $("#dExport");
+        if (de)
+          de.onclick = () => {
+            const dd = u.dossier || {};
+            const txt = Object.entries(dd)
+              .map(([k, v]) => `${k}: ${v || ""}`)
+              .join("\n");
+            downloadText(txt || "(dossiê vazio)", "dossie.txt");
+          };
+      };
+
+      SETUP_FNS[8] = function setupModule8() {
+        const u = student();
+        $$("[data-final]").forEach((chk) => {
+          chk.checked = u.reflections["final_" + chk.dataset.final] || false;
+          chk.onchange = () => {
+            u.reflections["final_" + chk.dataset.final] = chk.checked;
+            save();
+          };
+        });
+      };
+
+      /* ==================== COMPONENTES COMPARTILHADOS ==================== */
+      function setupLab() {
+        setupComparator(
+          "#labVin",
+          "#labVref",
+          "#labVinV",
+          "#labVrefV",
+          "#labCmpOut",
+        );
+        setupGenerator(
+          "#labWave",
+          "#labFreq",
+          "#labAmp",
+          "#labDuty",
+          "#labFreqV",
+          "#labAmpV",
+          "#labDutyV",
+          "#labWaveCanvas",
+        );
+        setupOscilloscope(
+          "#labOsVd",
+          "#labOsTd",
+          "#labOsVdV",
+          "#labOsTdV",
+          "#labOsCanvas",
+          "#labOsCalc",
+        );
+        setupHysteresis(
+          "#labTh",
+          "#labTl",
+          "#labThV",
+          "#labTlV",
+          "#labHistCanvas",
+        );
+      }
+
+      function setupComparator(vInSel, vRefSel, vInLbl, vRefLbl, outSel) {
+        const vin = $(vInSel),
+          vref = $(vRefSel),
+          out = $(outSel);
+        if (!vin || !vref || !out) return;
+        const update = () => {
+          const v1 = parseFloat(vin.value),
+            v2 = parseFloat(vref.value);
+          $(vInLbl).textContent = v1.toFixed(1).replace(".", ",");
+          $(vRefLbl).textContent = v2.toFixed(1).replace(".", ",");
+          let stateTxt, cls;
+          if (Math.abs(v1 - v2) < 0.05) {
+            stateTxt = "INSTÁVEL (próximo do limiar)";
+            cls = "#f0ad4e";
+          } else if (v1 > v2) {
+            stateTxt = "ALTO (saturação positiva)";
+            cls = "#70AD47";
+          } else {
+            stateTxt = "BAIXO (saturação negativa)";
+            cls = "#C00000";
+          }
+          out.innerHTML = `Vin = ${v1.toFixed(1)} V · Vref = ${v2.toFixed(1)} V → <strong style="color:${cls}">SAÍDA: ${stateTxt}</strong>`;
+        };
+        vin.oninput = update;
+        vref.oninput = update;
+        update();
+      }
+
+      function setupHysteresis(thSel, tlSel, thLbl, tlLbl, canvasSel) {
+        const th = $(thSel),
+          tl = $(tlSel),
+          cv = $(canvasSel);
+        if (!th || !tl || !cv) return;
+        const clamp = (which) => {
+          let TH = parseFloat(th.value),
+            TL = parseFloat(tl.value);
+          if (TH <= TL + 0.1) {
+            if (which === "th") {
+              TL = Math.max(0.5, TH - 0.2);
+              tl.value = TL;
+            } else {
+              TH = Math.min(4.5, TL + 0.2);
+              th.value = TH;
+            }
+          }
+        };
+        const draw = () => {
+          const TH = parseFloat(th.value),
+            TL = parseFloat(tl.value);
+          $(thLbl).textContent = TH.toFixed(1).replace(".", ",");
+          $(tlLbl).textContent = TL.toFixed(1).replace(".", ",");
+          const ctx = cv.getContext("2d"),
+            W = cv.width,
+            H = cv.height,
+            PH = 150;
+          ctx.fillStyle = "#0d1b2a";
+          ctx.fillRect(0, 0, W, H);
+          const yS = (v) => PH - 6 - (v / 5) * (PH - 12);
+          const hl = (y) => {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+          };
+          ctx.strokeStyle = "#1e3348";
+          ctx.lineWidth = 1;
+          for (let i = 0; i <= 5; i++) hl(yS(i));
+          const sig = [];
+          for (let x = 0; x < W; x++)
+            sig.push(
+              2.0 +
+                1.3 * Math.sin((x / W) * Math.PI * 3) +
+                0.22 * Math.sin(x * 0.55) +
+                0.14 * Math.sin(x * 1.31) +
+                0.1 * Math.sin(x * 2.3),
+            );
+          const mid = (TH + TL) / 2;
+          let a = sig[0] > mid,
+            b = sig[0] > TH,
+            ta = 0,
+            tb = 0;
+          const A = [],
+            B = [];
+          sig.forEach((v) => {
+            const na = v > mid;
+            if (na !== a) {
+              ta++;
+              a = na;
+            }
+            if (!b && v > TH) {
+              b = true;
+              tb++;
+            } else if (b && v < TL) {
+              b = false;
+              tb++;
+            }
+            A.push(a);
+            B.push(b);
+          });
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.strokeStyle = "#70AD47";
+          hl(yS(TH));
+          ctx.strokeStyle = "#C00000";
+          hl(yS(TL));
+          ctx.setLineDash([]);
+          const trace = (arr, hi, lo, color) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            arr.forEach((v, x) => {
+              const y = v ? hi : lo;
+              if (x === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+          };
+          ctx.strokeStyle = "#ED7D31";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          sig.forEach((v, x) => {
+            const y = yS(v);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+          trace(A, 170, 192, "#ff8a80");
+          trace(B, 212, 234, "#4FC3F7");
+          ctx.font = "11px sans-serif";
+          ctx.fillStyle = "#e0e8ef";
+          ctx.fillText(
+            "Laranja: sinal com ruído · tracejados: limiar superior (verde) e inferior (vermelho)",
+            8,
+            14,
+          );
+          ctx.fillStyle = "#ff8a80";
+          ctx.fillText(
+            `Sem histerese (Vref = ${mid.toFixed(2).replace(".", ",")} V): ${ta} comutações`,
+            8,
+            166,
+          );
+          ctx.fillStyle = "#4FC3F7";
+          ctx.fillText(`Com histerese: ${tb} comutações`, 8, 208);
+        };
+        th.oninput = () => {
+          clamp("th");
+          draw();
+        };
+        tl.oninput = () => {
+          clamp("tl");
+          draw();
+        };
+        draw();
+      }
+
+      function setupFilter(rSel, cSel, outSel) {
+        const r = $(rSel),
+          c = $(cSel),
+          out = $(outSel);
+        if (!r || !c || !out) return;
+        const update = () => {
+          const R = parseFloat(r.value) || 0.001;
+          const C = parseFloat(c.value) || 0.001;
+          const fc = 1 / (2 * Math.PI * R * 1000 * C * 1e-9);
+          let disp;
+          if (fc >= 1e6) disp = (fc / 1e6).toFixed(2) + " MHz";
+          else if (fc >= 1e3) disp = (fc / 1e3).toFixed(2) + " kHz";
+          else disp = fc.toFixed(2) + " Hz";
+          out.textContent = `fc ≈ ${disp}  (R = ${R} kΩ, C = ${C} nF)`;
+        };
+        r.oninput = update;
+        c.oninput = update;
+        update();
+      }
+
+      function setupGenerator(
+        waveSel,
+        freqSel,
+        ampSel,
+        dutySel,
+        freqLbl,
+        ampLbl,
+        dutyLbl,
+        canvasSel,
+      ) {
+        const w = $(waveSel),
+          f = $(freqSel),
+          a = $(ampSel),
+          d = $(dutySel);
+        const cv = $(canvasSel);
+        if (!cv) return;
+        const draw = () => {
+          if (w) $(freqLbl).textContent = f.value;
+          if (a)
+            $(ampLbl).textContent = parseFloat(a.value)
+              .toFixed(1)
+              .replace(".", ",");
+          if (d) $(dutyLbl).textContent = d.value;
+          const ctx = cv.getContext("2d");
+          const W = cv.width,
+            H = cv.height;
+          ctx.fillStyle = "#0d1b2a";
+          ctx.fillRect(0, 0, W, H);
+          ctx.strokeStyle = "#1e3348";
+          for (let i = 1; i < 4; i++) {
+            const y = (H / 4) * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+          }
+          const mid = H / 2;
+          const amp = (parseFloat(a.value || 2.5) * (H / 2 - 10)) / 5;
+          const freq = parseFloat(f.value || 1000);
+          const duty = parseFloat(d.value || 50) / 100;
+          const cycles = freq * 0.005;
+          ctx.strokeStyle = "#ED7D31";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let x = 0; x < W; x++) {
+            const t = (x / W) * cycles;
+            let v = 0;
+            const type = w ? w.value : "square";
+            if (type === "sine") {
+              v = Math.sin(2 * Math.PI * t);
+            } else if (type === "square") {
+              v = t % 1 < duty ? 1 : -1;
+            } else {
+              const ph = t % 1;
+              v =
+                ph < duty
+                  ? (ph / duty) * 2 - 1
+                  : 1 - ((ph - duty) / (1 - duty)) * 2;
+            }
+            const y = mid - v * amp;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          ctx.fillStyle = "#e0e8ef";
+          ctx.font = "11px sans-serif";
+          ctx.fillText(
+            `${freq} Hz · pico ${parseFloat(a.value).toFixed(1)} V · duty ${(duty * 100).toFixed(0)}% · janela 5 ms`,
+            8,
+            16,
+          );
+        };
+        [w, f, a, d].forEach((el) => {
+          if (el) {
+            el.oninput = draw;
+            el.onchange = draw;
+          }
+        });
+        draw();
+      }
+
+      function setupOscilloscope(
+        vdSel,
+        tdSel,
+        vdLbl,
+        tdLbl,
+        canvasSel,
+        calcSel,
+      ) {
+        const vd = $(vdSel),
+          td = $(tdSel),
+          cv = $(canvasSel),
+          calc = $(calcSel);
+        if (!cv) return;
+        const draw = () => {
+          const Vd = parseFloat(vd.value),
+            Td = parseFloat(td.value);
+          $(vdLbl).textContent = Vd.toFixed(1).replace(".", ",");
+          $(tdLbl).textContent = Td.toFixed(1).replace(".", ",");
+          const ctx = cv.getContext("2d");
+          const W = cv.width,
+            H = cv.height;
+          ctx.fillStyle = "#0d1b2a";
+          ctx.fillRect(0, 0, W, H);
+          ctx.strokeStyle = "#1e3348";
+          for (let i = 1; i < 10; i++) {
+            const x = (W / 10) * i;
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+          }
+          for (let i = 1; i < 8; i++) {
+            const y = (H / 8) * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+          }
+          const period_ms = 0.5;
+          const divsX = 10;
+          const totalTime = divsX * Td;
+          const periodsVisible = totalTime / period_ms;
+          const mid = H / 2;
+          const amp = 2.5;
+          const divsY = amp / Vd;
+          const pxPerDiv = H / 8;
+          const dv = Math.min(divsY, 3.9);
+          const yHigh = mid - dv * pxPerDiv;
+          const yLow = mid + dv * pxPerDiv;
+          ctx.strokeStyle = "#ED7D31";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          const periodPx = W / periodsVisible;
+          for (let x = 0; x < W; x++) {
+            const ph = (x % periodPx) / periodPx;
+            const y = ph < 0.5 ? yHigh : yLow;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          ctx.fillStyle = "#e0e8ef";
+          ctx.font = "11px sans-serif";
+          ctx.fillText(
+            `Onda quadrada · amplitude ~${amp} V · período ${period_ms} ms`,
+            8,
+            16,
+          );
+          if (calc) {
+            const T = period_ms / 1000;
+            const f = 1 / T;
+            calc.innerHTML = `Amplitude ≈ ${amp} V (${(amp / Vd).toFixed(1)} div × ${Vd} V/div)<br>Período = ${period_ms} ms · Frequência = <strong>${f.toFixed(0)} Hz</strong> · Duty cycle = 50%${divsY > 3.9 ? "<br><strong>⚠ Sinal fora da tela: aumente V/div.</strong>" : ""}`;
+          }
+        };
+        vd.oninput = draw;
+        td.oninput = draw;
+        draw();
+      }
+
+      /* ==================== MEDIÇÕES ==================== */
+      function renderMeasurements() {
+        const u = student();
+        const list = $("#mList");
+        if (!list) return;
+        if (!u.measurements.length) {
+          list.innerHTML = '<p class="empty">Nenhuma medição registrada.</p>';
+          return;
+        }
+        list.innerHTML = `<table class="table">
+    <tr><th>Ponto</th><th>Grandeza</th><th>Valor</th><th>Condição</th><th>Instrumento</th><th>Esperado</th><th>Obs.</th><th></th></tr>
+    ${u.measurements
+      .map(
+        (m) => `<tr>
+      <td>${esc(m.tp)}</td><td>${esc(m.qty)}</td><td>${esc(m.val)} ${esc(m.unit)}</td>
+      <td>${esc(m.cond || "—")}</td><td>${esc(m.instr || "—")}</td><td>${esc(m.exp || "—")}</td><td>${esc(m.obs || "—")}</td>
+      <td><button class="btn ghost sm" data-del="${m.id}" title="Excluir medição">🗑</button></td>
+    </tr>`,
+      )
+      .join("")}
+  </table>`;
+        list.querySelectorAll("[data-del]").forEach((b) => {
+          b.onclick = () => {
+            if (!confirm("Excluir esta medição?")) return;
+            u.measurements = u.measurements.filter(
+              (m) => String(m.id) !== b.dataset.del,
+            );
+            save();
+            renderMeasurements();
+            updateCompletionUI(7);
+          };
+        });
+      }
+
+      /* ==================== EXPORTAÇÃO ==================== */
+      function downloadCSV(rows, filename) {
+        const csv = rows.map((r) => r.map(sanitizeCell).join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], {
+          type: "text/csv;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      function downloadText(text, filename) {
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      /* ==================== START ==================== */
+      render();
+    </script>
+  </body>
+</html>
